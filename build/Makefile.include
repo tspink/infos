@@ -1,0 +1,15 @@
+#
+# InfOS
+#
+# Copyright (C) University of Edinburgh 2016.  All Rights Reserved
+# Tom Spink <tspink@inf.ed.ac.uk>
+#
+
+export builtin-name := builtin.o
+
+export cxx		:= g++
+export ld		:= ld
+export ln		:= ln
+export objcopy	:= objcopy
+
+export BUILD-TARGET = $(patsubst $(top-dir)/%,%,$@)
