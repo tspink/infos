@@ -100,7 +100,7 @@ void Thread::stop()
 	// If this thread is currently running, then we must yield so that
 	// execution doesn't return into it.
 	if (&Thread::current() == this) {
-		sys.arch().invoke_kernel_syscall(kernel::Syscalls::SYS_YIELD);
+		sys.arch().invoke_kernel_syscall(1);
 	}
 }
 
@@ -109,7 +109,7 @@ void Thread::sleep()
 	sys.scheduler().set_entity_state(*this, SchedulingEntityState::SLEEPING);
 	
 	if (&Thread::current() == this) {
-		sys.arch().invoke_kernel_syscall(kernel::Syscalls::SYS_YIELD);
+		sys.arch().invoke_kernel_syscall(1);
 	}
 }
 

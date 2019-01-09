@@ -21,7 +21,7 @@ using namespace infos::kernel;
 void Mutex::lock()
 {
 	while (__sync_lock_test_and_set(&_locked, 1)) {
-		infos::kernel::sys.arch().invoke_kernel_syscall(kernel::Syscalls::SYS_YIELD);
+		infos::kernel::sys.arch().invoke_kernel_syscall(1);
 	}
 	
 	_owner = &Thread::current();

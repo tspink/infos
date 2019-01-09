@@ -30,75 +30,13 @@ using namespace infos::fs;
 void user_syscall_handler(const IRQ *irq, void *priv)
 {
 	//syslog.messagef(LogLevel::DEBUG, "USER SYSTEM CALL: thread=%p", Thread::current());
-	
-	X86Context *ctx = (X86Context *)Thread::current().context().native_context;
-	
+
+	X86Context *ctx = (X86Context *) Thread::current().context().native_context;
+
 	sys.arch().enable_interrupts();
-	Syscalls::Syscalls syscall = (Syscalls::Syscalls)ctx->rax;
-	
-	switch(syscall) {
-	case Syscalls::SYS_OPEN:
-		ctx->rax = Syscall::sys_open(ctx->rdi, ctx->rsi);
-		break;
 
-	case Syscalls::SYS_CLOSE:
-		ctx->rax = Syscall::sys_close(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_READ:
-		ctx->rax = Syscall::sys_read(ctx->rdi, ctx->rsi, ctx->rdx);
-		break;
-		
-	case Syscalls::SYS_WRITE:
-		ctx->rax = Syscall::sys_write(ctx->rdi, ctx->rsi, ctx->rdx);
-		break;
-		
-	case Syscalls::SYS_OPENDIR:
-		ctx->rax = Syscall::sys_opendir(ctx->rdi, ctx->rsi);
-		break;
-		
-	case Syscalls::SYS_READDIR:
-		ctx->rax = Syscall::sys_readdir(ctx->rdi, ctx->rsi);
-		break;
-		
-	case Syscalls::SYS_CLOSEDIR:
-		ctx->rax = Syscall::sys_closedir(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_EXIT:
-		Syscall::sys_exit(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_EXEC:
-		ctx->rax = Syscall::sys_exec(ctx->rdi, ctx->rsi);
-		break;
-		
-	case Syscalls::SYS_WAIT_PROC:
-		ctx->rax = Syscall::sys_wait_proc(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_CREATE_THREAD:
-		ctx->rax = Syscall::sys_create_thread(ctx->rdi, ctx->rsi);
-		break;
+	ctx->rax = sys.syscalls().InvokeSyscall(ctx->rax, ctx->rdi, ctx->rsi, ctx->rdx, ctx->rcx, ctx->r8, ctx->r9);
 
-	case Syscalls::SYS_STOP_THREAD:
-		ctx->rax = Syscall::sys_stop_thread(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_JOIN_THREAD:
-		ctx->rax = Syscall::sys_join_thread(ctx->rdi);
-		break;
-		
-	case Syscalls::SYS_USLEEP:
-		Syscall::sys_usleep(ctx->rdi);
-		break;
-		
-	default:
-		ctx->rax = -1;
-		syslog.messagef(LogLevel::DEBUG, "UNHANDLED USER SYSTEM CALL: %lu", syscall);
-		break;
-	}
-	
 	sys.arch().disable_interrupts();
 }
 
@@ -107,15 +45,14 @@ void user_syscall_handler(const IRQ *irq, void *priv)
  */
 void kernel_syscall_handler(const IRQ *irq, void *priv)
 {
-	Syscalls::Syscalls syscall = (Syscalls::Syscalls)Thread::current().context().native_context->rax;
-	
-	//syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);
-	
-	switch(syscall) {
-	case Syscalls::SYS_YIELD:
+	//syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);*/
+
+	int syscall = Thread::current().context().native_context->rax;
+	switch (syscall) {
+	case 1:
 		sys.scheduler().schedule();
 		break;
-		
+
 	default:
 		syslog.messagef(LogLevel::DEBUG, "UNHANDLED SYSTEM CALL %lu", syscall);
 		break;

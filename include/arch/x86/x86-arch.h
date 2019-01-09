@@ -39,7 +39,7 @@ namespace infos
 				void dump_current_context() const override;
 				void dump_stack(const kernel::ThreadContext& context) const override;
 
-				void invoke_kernel_syscall(kernel::Syscalls::Syscalls nr) override;
+				void invoke_kernel_syscall(int nr) override;
 				
 				kernel::Thread& get_current_thread() const override;
 				void set_current_thread(kernel::Thread& thread) override;

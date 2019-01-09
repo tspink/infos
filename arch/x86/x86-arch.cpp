@@ -148,7 +148,7 @@ void X86Arch::dump_native_context(const X86Context& native_context) const
 	syslog.messagef(LogLevel::DEBUG, "prev=%p", native_context.previous_context);
 }
 
-void X86Arch::invoke_kernel_syscall(Syscalls::Syscalls nr)
+void X86Arch::invoke_kernel_syscall(int nr)
 {
 	asm volatile("int $0x80" :: "a"((uint64_t)nr));
 }

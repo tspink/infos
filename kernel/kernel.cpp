@@ -92,6 +92,8 @@ void Kernel::start_kernel_threadproc_tramp(Kernel* kernel, BottomFn bottom)
 
 void Kernel::start_kernel_threadproc()
 {
+	DefaultSyscalls::RegisterDefaultSyscalls(syscalls());
+	
 	if (!vfs().init()) {
 		syslog.message(LogLevel::FATAL, "Unable to initialise the FS subsystem");
 		arch_abort();

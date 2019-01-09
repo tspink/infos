@@ -30,7 +30,7 @@ namespace infos
 			virtual void dump_thread_context(const kernel::ThreadContext& context) const = 0;
 			virtual void dump_stack(const kernel::ThreadContext& context) const = 0;
 			
-			virtual void invoke_kernel_syscall(kernel::Syscalls::Syscalls nr) = 0;
+			virtual void invoke_kernel_syscall(int nr) = 0;
 			
 			virtual kernel::Thread& get_current_thread() const = 0;
 			virtual void set_current_thread(kernel::Thread& thread) = 0;

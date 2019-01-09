@@ -14,6 +14,7 @@
 #include <infos/kernel/device-manager.h>
 #include <infos/kernel/module.h>
 #include <infos/kernel/sched.h>
+#include <infos/kernel/syscall.h>
 #include <infos/mm/mm.h>
 #include <infos/fs/vfs.h>
 #include <infos/util/time.h>
@@ -50,6 +51,7 @@ namespace infos
 			inline Scheduler& scheduler() { return _scheduler; }
 			inline fs::VirtualFilesystem& vfs() { return _vfs; }
 			inline util::CommandLine& cmdline() { return _cmdline; }
+			inline SyscallManager& syscalls() { return _scm; }
 			
 			void update_runtime(util::Nanoseconds ns);
 			
@@ -71,6 +73,7 @@ namespace infos
 			Scheduler _scheduler;
 			fs::VirtualFilesystem _vfs;
 			util::CommandLine _cmdline;
+			SyscallManager _scm;
 			
 			util::KernelRuntimeClock::Timepoint _runtime;
 			
