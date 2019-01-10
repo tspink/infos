@@ -80,7 +80,8 @@ namespace infos
 			
 			util::KernelRuntimeClock::Timepoint _runtime;
 			util::TimeOfDay _tod;
-			util::KernelRuntimeClock::Timepoint _last_tod_update;
+			
+			util::Nanoseconds _ticks_since_last_tod_update;
 			
 			Process *_kernel_process;
 			

@@ -25,6 +25,11 @@ namespace infos {
 				return *this;
 			}
 
+			Self& operator-=(const Self& amt) {
+				_val -= amt._val;
+				return *this;
+			}
+
 			friend Self operator+(const Self& l, const Self& r) {
 				return Self(l._val + r._val);
 			}

@@ -68,6 +68,11 @@ SECTIONS
 		_SCHED_ALG_PTR_START = .;
 		KEEP(*(.schedalg))
 		_SCHED_ALG_PTR_END = .;
+
+		. = ALIGN(16);
+		_DEVICE_PTR_START = .;
+		KEEP(*(.devctor))
+		_DEVICE_PTR_END = .;
 	}
 
 	_RODATA_END = .;

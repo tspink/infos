@@ -198,6 +198,8 @@ bool infos::arch::x86::activate_console()
 	return true;
 }
 
+extern char _DEVICE_PTR_START, _DEVICE_PTR_END;
+
 /**
  * Initialises main system devices.
  * @return Returns TRUE if the devices were successfully initialised, or FALSE otherwise.
@@ -206,5 +208,21 @@ bool infos::arch::x86::devices_init()
 {
 	// Create a new PCI bus object, with bus ID 0 and probe the bus for devices.
 	PCIBus *bus = new PCIBus(0);
-	return bus->probe(sys.device_manager());
+	if (!bus->probe(sys.device_manager())) {
+		return false;
+	}
+	
+	// Initialise other platform devices.
+	device_ctor_fn *devices = (device_ctor_fn *)&_DEVICE_PTR_START;
+	
+	syslog.messagef(LogLevel::INFO, "registering additional devices...");
+	while (devices < (device_ctor_fn *)&_DEVICE_PTR_END) {
+		syslog.messagef(LogLevel::DEBUG, "construct");
+		Device *d = (*devices)();
+		
+		sys.device_manager().register_device(*d);
+		devices++;
+	}
+	
+	return true;
 }

@@ -160,6 +160,7 @@ void Kernel::start_kernel_threadproc()
 		arch_abort();
 	}
 	
+	resync_tod();
 	print_tod();
 }
 
@@ -172,8 +173,10 @@ void Kernel::update_runtime(Nanoseconds ticks)
 {
 	_runtime += ticks;
 	
-	// Update the time-of-day
-	if ((_runtime - _last_tod_update) > Nanoseconds(1e9)) {
+	_ticks_since_last_tod_update += ticks;
+	
+	while (_ticks_since_last_tod_update > Nanoseconds(1e9)) {
+		_ticks_since_last_tod_update -= Nanoseconds(1e9);
 		increment_tod();
 	}
 }
@@ -192,7 +195,7 @@ void Kernel::initialise_tod()
 
 void Kernel::resync_tod()
 {
-	_last_tod_update = _runtime;
+	_ticks_since_last_tod_update = 0;
 	
 	infos::drivers::timer::RTC *rtc;
 	
@@ -228,8 +231,6 @@ void Kernel::increment_tod()
 			}
 		}
 	}
-	
-	_last_tod_update = _runtime;
 }
 
 void Kernel::print_tod()

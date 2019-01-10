@@ -22,7 +22,7 @@ namespace infos
 			{
 				unsigned short seconds, minutes, hours, day_of_month, month, year;
 			};
-			
+						
 			class RTC : public Device
 			{
 			public:
@@ -31,6 +31,8 @@ namespace infos
 				const DeviceClass& device_class() const override { return RTCDeviceClass; }
 				
 				virtual void read_timepoint(RTCTimePoint& tp) = 0;
+				
+				fs::File* open_as_file() override;
 			};
 		}
 	}
