@@ -54,6 +54,7 @@ namespace infos
 			inline SyscallManager& syscalls() { return _scm; }
 			
 			void update_runtime(util::Nanoseconds ns);
+			void print_tod();
 			
 			const util::KernelRuntimeClock::Timepoint runtime() const { asm volatile("" ::: "memory"); return _runtime; }
 			
@@ -63,6 +64,8 @@ namespace infos
 			void spin_delay(util::Nanoseconds ns);
 			
 			Process *launch_process(const util::String& path, const util::String& cmdline);
+			
+			const util::TimeOfDay& time_of_day() const { return _tod; }
 			
 		private:
 			arch::Arch& _arch;
@@ -76,12 +79,17 @@ namespace infos
 			SyscallManager _scm;
 			
 			util::KernelRuntimeClock::Timepoint _runtime;
+			util::TimeOfDay _tod;
+			util::KernelRuntimeClock::Timepoint _last_tod_update;
 			
 			Process *_kernel_process;
 			
 			static void start_kernel_threadproc_tramp(Kernel *kernel, BottomFn bottom);
 			void start_kernel_threadproc();
                         void dump_partitions();
+			void initialise_tod();
+			void resync_tod();
+			void increment_tod();
 		};
 		
 		extern Kernel sys;

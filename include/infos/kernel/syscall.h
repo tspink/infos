@@ -44,6 +44,7 @@ namespace infos {
 			static unsigned int sys_stop_thread(ObjectHandle h);
 			static unsigned int sys_join_thread(ObjectHandle h);
 			static unsigned long sys_usleep(unsigned long us);
+			static unsigned int sys_get_tod(uintptr_t tpstruct);
 
 			static void RegisterDefaultSyscalls(SyscallManager& mgr);
 		};

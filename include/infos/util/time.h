@@ -41,6 +41,10 @@ namespace infos {
 				return l._val < r._val;
 			}
 
+			friend bool operator>(const Self& l, const Self& r) {
+				return l._val > r._val;
+			}
+
 			P count() const {
 				return _val;
 			}
@@ -115,6 +119,11 @@ namespace infos {
 
 		struct KernelRuntimeClock {
 			typedef TimepointImpl<> Timepoint;
+		};
+		
+		struct TimeOfDay {
+			unsigned short hours, minutes, seconds;
+			unsigned short day, month, year;
 		};
 	}
 }

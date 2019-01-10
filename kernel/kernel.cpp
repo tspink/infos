@@ -18,6 +18,7 @@
 #include <infos/fs/file.h>
 #include <infos/fs/exec/elf-loader.h>
 #include <infos/drivers/block/block-device.h>
+#include <infos/drivers/timer/rtc.h>
 
 #include <arch/arch.h>
 
@@ -63,6 +64,8 @@ _vfs(*this)
 void Kernel::start(BottomFn bottom)
 {
 	syslog.message(LogLevel::INFO, "OK!  Starting the kernel...");
+	
+	initialise_tod();
 	
 	_kernel_process = new Process("kernel", true, (Thread::thread_proc_t) &start_kernel_threadproc_tramp);
 	
@@ -156,6 +159,8 @@ void Kernel::start_kernel_threadproc()
 		syslog.messagef(LogLevel::FATAL, "Unable to launch init=%s", init_program);
 		arch_abort();
 	}
+	
+	print_tod();
 }
 
 bool Kernel::early_init(const char* cmdline)
@@ -166,6 +171,70 @@ bool Kernel::early_init(const char* cmdline)
 void Kernel::update_runtime(Nanoseconds ticks)
 {
 	_runtime += ticks;
+	
+	// Update the time-of-day
+	if ((_runtime - _last_tod_update) > Nanoseconds(1e9)) {
+		increment_tod();
+	}
+}
+
+void Kernel::initialise_tod()
+{
+	_tod.day = 1;
+	_tod.hours = 0;
+	_tod.minutes = 0;
+	_tod.seconds = 0;
+	_tod.month = 1;
+	_tod.year = 1970;
+
+	resync_tod();
+}
+
+void Kernel::resync_tod()
+{
+	_last_tod_update = _runtime;
+	
+	infos::drivers::timer::RTC *rtc;
+	
+	if (!sys.device_manager().try_get_device_by_class<infos::drivers::timer::RTC>(infos::drivers::timer::RTC::RTCDeviceClass, rtc)) {
+		syslog.messagef(LogLevel::WARNING, "No RTC available to synchronise TOD");		
+		return;
+	}
+	
+	infos::drivers::timer::RTCTimePoint tp;
+	rtc->read_timepoint(tp);
+	
+	_tod.day = tp.day_of_month;
+	_tod.hours = tp.hours;
+	_tod.minutes = tp.minutes;
+	_tod.month = tp.month;
+	_tod.seconds = tp.seconds;
+	_tod.year = tp.year;
+}
+
+void Kernel::increment_tod()
+{
+	_tod.seconds++;
+	if (_tod.seconds > 59) {
+		_tod.seconds = 0;
+		_tod.minutes++;
+		if (_tod.minutes > 59) {
+			_tod.minutes = 0;
+			_tod.hours++;
+			if (_tod.hours > 23) {
+				_tod.hours = 0;
+				
+				// oh no!
+			}
+		}
+	}
+	
+	_last_tod_update = _runtime;
+}
+
+void Kernel::print_tod()
+{
+	syslog.messagef(LogLevel::INFO, "Current time-of-day: %02d/%02d/%02d %02d:%02d:%02d", _tod.day, _tod.month, _tod.year, _tod.hours, _tod.minutes, _tod.seconds);
 }
 
 Process *Kernel::launch_process(const String& path, const String& cmdline)

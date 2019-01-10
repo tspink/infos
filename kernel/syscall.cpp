@@ -72,6 +72,7 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 	mgr.RegisterSyscall(14, (SyscallManager::syscallfn) DefaultSyscalls::sys_join_thread);
 
 	mgr.RegisterSyscall(15, (SyscallManager::syscallfn) DefaultSyscalls::sys_usleep);
+	mgr.RegisterSyscall(16, (SyscallManager::syscallfn) DefaultSyscalls::sys_get_tod);
 }
 
 void DefaultSyscalls::sys_nop()
@@ -255,4 +256,23 @@ unsigned long DefaultSyscalls::sys_usleep(unsigned long us)
 {
 	sys.spin_delay(util::Microseconds(us));
 	return us;
+}
+
+struct userspace_tod_buffer {
+	unsigned short seconds, minutes, hours, day_of_month, month, year;
+};
+
+unsigned int DefaultSyscalls::sys_get_tod(uintptr_t tpstruct)
+{
+	auto& tod = sys.time_of_day();
+	
+	userspace_tod_buffer *userspace_tod = (userspace_tod_buffer *)tpstruct;
+	userspace_tod->day_of_month = tod.day;
+	userspace_tod->hours = tod.hours;
+	userspace_tod->minutes = tod.minutes;
+	userspace_tod->month = tod.month;
+	userspace_tod->seconds = tod.seconds;
+	userspace_tod->year = tod.year;
+	
+	return 0;
 }
