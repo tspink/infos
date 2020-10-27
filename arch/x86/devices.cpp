@@ -53,6 +53,61 @@ using namespace infos::drivers::timer;
 using namespace infos::drivers::irq;
 using namespace infos::kernel;
 
+extern char _MPSTARTUP_START;
+extern char _MPSTARTUP_END;
+
+bool infos::arch::x86::cpu_init() {
+    // Determine the LAPIC base address.
+    // todo: how do we know this is the LAPIC of the BSP?
+    uint64_t lapic_base = __rdmsr(MSR_APIC_BASE) & ~0xfff;
+    if (!lapic_base) {
+        syslog.message(LogLevel::ERROR, "Invalid LAPIC base address");
+        return false;
+    }
+
+    // Determine the IOAPIC base address.
+    uint32_t ioapic_base = infos::arch::x86::acpi::acpi_get_ioapic_base();
+
+    // Print out some information about the memory-mapped location of these
+    // structures.
+    syslog.messagef(LogLevel::DEBUG, "LAPIC base=%lx, IOAPIC base=%lx", lapic_base, ioapic_base);
+
+    // Create and register an LAPIC object.
+    LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
+    if (!sys.device_manager().register_device(*lapic))
+        return false;
+
+    // Create and register an IOAPIC object.
+    IOAPIC *ioapic = new IOAPIC(pa_to_vpa(ioapic_base));
+    if (!sys.device_manager().register_device(*ioapic))
+        return false;
+
+    util::List<Core> cores = infos::arch::x86::acpi::acpi_get_cores();
+    //todo: disable PIC - think this has been done?
+
+//    for (int i = 0; i < num_cores; i++) {
+    for (auto core : cores) {
+        // skip BSP, offline, disabled cores etc
+        if (core.get_state() == Core::core_state::ONLINE) {
+            // todo: wake each processor and get to say hello world
+            uint8_t cur_id = core.get_processor_id();
+
+            // there should be some AP trampoline code
+            // put this somewhere and pass the pfn to it
+
+            // start the core!
+            syslog.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", cur_id);
+            lapic->send_remote_init(cur_id, 0);
+
+            //todo delay
+//        lapic->send_remote_sipi(cur_id, 0);
+            // todo: spin delay, check ready flag, go again
+        }
+
+    }
+    return true;
+}
+
 /**
  * Initialise the main system timer.
  * @return Returns TRUE if the timer was successfully initialised, or FALSE otherwise.
@@ -67,30 +122,6 @@ bool infos::arch::x86::timer_init()
 		syslog.message(LogLevel::ERROR, "APIC not present");
 		return false;
 	}
-	
-	// Determine the LAPIC base address.
-	uint64_t lapic_base = __rdmsr(MSR_APIC_BASE) & ~0xfff;
-	if (!lapic_base) {
-		syslog.message(LogLevel::ERROR, "Invalid LAPIC base address");
-		return false;
-	}
-	
-	// Determine the IOAPIC base address.
-	uint32_t ioapic_base = infos::arch::x86::acpi::acpi_get_ioapic_base();
-	
-	// Print out some information about the memory-mapped location of these
-	// structures.
-	syslog.messagef(LogLevel::DEBUG, "LAPIC base=%lx, IOAPIC base=%lx", lapic_base, ioapic_base);
-	
-	// Create and register an LAPIC object.
-	LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
-	if (!sys.device_manager().register_device(*lapic))
-		return false;
-
-	// Create and register an IOAPIC object.
-	IOAPIC *ioapic = new IOAPIC(pa_to_vpa(ioapic_base));
-	if (!sys.device_manager().register_device(*ioapic))
-		return false;
 
 	// Create and register a PIT (Programmable Interrupt Timer).  This isn't used as
 	// the system timer, but rather as a reference timer for calibrating the LAPIC

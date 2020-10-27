@@ -22,11 +22,11 @@ namespace infos {
 			extern bool platform_init(void);
 			extern bool mm_init(void);
 			extern bool mm_pf_init(void);
-			extern bool cpu_init(void);
 			extern bool modules_init(void);
 			extern bool sched_init(void);
-			
-			extern bool timer_init(void);
+
+            extern bool cpu_init(void);
+            extern bool timer_init(void);
 			extern bool console_init(void);
 			extern bool activate_console(void);
 			
