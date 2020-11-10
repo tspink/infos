@@ -51,10 +51,9 @@ using namespace infos::drivers::pci;
 using namespace infos::drivers::video;
 using namespace infos::drivers::timer;
 using namespace infos::drivers::irq;
+using namespace infos::mm;
 using namespace infos::kernel;
-
-extern char _MPSTARTUP_START;
-extern char _MPSTARTUP_END;
+using namespace infos::util;
 
 bool infos::arch::x86::cpu_init() {
     // Determine the LAPIC base address.
@@ -72,6 +71,14 @@ bool infos::arch::x86::cpu_init() {
     // structures.
     syslog.messagef(LogLevel::DEBUG, "LAPIC base=%lx, IOAPIC base=%lx", lapic_base, ioapic_base);
 
+    // Create and register a PIT (Programmable Interrupt Timer).  This isn't used as
+    // the system timer, but rather as a reference timer for calibrating the LAPIC
+    // timer.
+    // todo: currently using for the spin delay, may be a better approach
+    PIT *pit = new PIT();
+    if (!sys.device_manager().register_device(*pit))
+        return false;
+
     // Create and register an LAPIC object.
     LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
     if (!sys.device_manager().register_device(*lapic))
@@ -82,30 +89,82 @@ bool infos::arch::x86::cpu_init() {
     if (!sys.device_manager().register_device(*ioapic))
         return false;
 
-    util::List<Core> cores = infos::arch::x86::acpi::acpi_get_cores();
+    Core* cores = infos::arch::x86::acpi::acpi_get_cores();
+    uint8_t num_cores = infos::arch::x86::acpi::acpi_get_num_cores();
     //todo: disable PIC - think this has been done?
 
-//    for (int i = 0; i < num_cores; i++) {
-    for (auto core : cores) {
-        // skip BSP, offline, disabled cores etc
-        if (core.get_state() == Core::core_state::ONLINE) {
-            // todo: wake each processor and get to say hello world
-            uint8_t cur_id = core.get_processor_id();
+    for (int i = 0; i < num_cores; i++) {
+        // skip BSP and error cores
+        if (cores[i].get_state() == Core::core_state::OFFLINE) {
+            // start the core! todo: wake each processor and get to say hello world
+            start_core(&cores[i], lapic, pit);
 
-            // there should be some AP trampoline code
-            // put this somewhere and pass the pfn to it
-
-            // start the core!
-            syslog.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", cur_id);
-            lapic->send_remote_init(cur_id, 0);
-
-            //todo delay
-//        lapic->send_remote_sipi(cur_id, 0);
-            // todo: spin delay, check ready flag, go again
         }
 
     }
+
+    // todo: remove pt mapping
+    // Once all cores have been initialised, remove the zero page mapping
+    mm_remove_multicore_mapping();
+
     return true;
+}
+
+extern char _MPSTARTUP_START;
+extern char _MPSTARTUP_END;
+extern unsigned long mpcr3, mpstack;
+extern unsigned char mpready;
+
+void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
+    uint8_t processor_id = core->get_processor_id();
+
+    // Copy AP trampoline code onto start page
+    uint8_t* start_page = (uint8_t*) pa_to_vpa(0);
+    size_t mpstartup_size = (uint64_t)&_MPSTARTUP_END - (uint64_t)&_MPSTARTUP_START;
+    memcpy(start_page, (const void *)(pa_to_vpa((uintptr_t) &_MPSTARTUP_START)), mpstartup_size);
+
+    // Insert CR3 value
+    uint64_t this_cr3;
+    asm volatile("mov %%cr3, %0" : "=r"(this_cr3));
+    size_t mpcr3_offset = (uint64_t)&mpcr3 - (uint64_t)&_MPSTARTUP_START;
+    *((uint64_t *)pa_to_vpa(mpcr3_offset)) = this_cr3;		// HACK: ONLY WORKS IF BASE PFN=0
+
+    // Insert RSP value
+    size_t mprsp_offset = (uint64_t)&mpstack - (uint64_t)&_MPSTARTUP_START;
+    PageDescriptor* pgd = sys.mm().pgalloc().alloc_pages(0);
+    *((uint64_t *)pa_to_vpa(mprsp_offset)) = sys.mm().pgalloc().pgd_to_kva(pgd);
+
+    asm volatile("mfence" ::: "memory");
+
+    // Get MPREADY flag
+    size_t mpready_offset = (uint64_t)&mpready - (uint64_t)&_MPSTARTUP_START;
+    volatile uint8_t *ready_flag = (volatile uint8_t *)pa_to_vpa(mpready_offset);
+    *ready_flag = 0;
+
+    syslog.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", processor_id);
+    lapic->send_remote_init(processor_id, 0);
+
+    // wait 10ms
+    pit->spin_delay(10000000);
+    syslog.messagef(infos::kernel::LogLevel::DEBUG, "sending sipi to core %u", processor_id);
+    lapic->send_remote_sipi(processor_id, 0);
+
+    // wait 1ms
+    pit->spin_delay(1000000);
+
+    if (!*ready_flag) {
+        syslog.messagef(infos::kernel::LogLevel::DEBUG, "resending sipi to core %u", processor_id);
+        lapic->send_remote_sipi(processor_id,0);
+        // wait 1s
+        pit->spin_delay(1000000000);
+    }
+
+    if (!*ready_flag) {
+        syslog.messagef(infos::kernel::LogLevel::DEBUG, "core %u error", processor_id);
+    } else {
+        core->set_state(Core::core_state::ONLINE);
+        syslog.messagef(infos::kernel::LogLevel::DEBUG, "core %u ready", processor_id);
+    }
 }
 
 /**
@@ -122,13 +181,6 @@ bool infos::arch::x86::timer_init()
 		syslog.message(LogLevel::ERROR, "APIC not present");
 		return false;
 	}
-
-	// Create and register a PIT (Programmable Interrupt Timer).  This isn't used as
-	// the system timer, but rather as a reference timer for calibrating the LAPIC
-	// timer.
-	PIT *pit = new PIT();
-	if (!sys.device_manager().register_device(*pit))
-		return false;
 	
 	// Finally, create a register the LAPIC timer.  The LAPIC timer will
 	// calibrate itself as part of its initialisation, and so the PIT
