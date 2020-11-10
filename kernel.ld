@@ -24,6 +24,20 @@ SECTIONS
 
 	_STARTUP_END = .;
 
+	_MPSTARTUP_START = .;
+	.mpstart.text :
+	{
+		*(.mpstart.text16)
+		*(.mpstart.text32)
+		*(.mpstart.text64)
+	}
+
+	.mpstart.data :
+	{
+		*(.mpstart.data)
+	}
+	_MPSTARTUP_END = .;
+
 	. = ALIGN(4096);
 	_KERNEL_LMA_START = .;
 
