@@ -26,6 +26,8 @@ namespace infos
                 uint8_t get_lapic_id();
                 core_state get_state();
 
+                void set_state(core_state state);
+
             private:
                 uint8_t processor_id;
                 uint8_t lapic_id;

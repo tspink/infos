@@ -15,7 +15,8 @@ namespace infos
 			{
 				bool acpi_init();
 				uint32_t acpi_get_ioapic_base();
-				util::List<Core> acpi_get_cores();
+				Core* acpi_get_cores();
+				uint8_t acpi_get_num_cores();
 
 				extern kernel::ComponentLog acpi_log;
 			}

@@ -11,6 +11,7 @@
 #include <arch/x86/acpi/acpi.h>
 #include <infos/util/list.h>
 #include <infos/util/string.h>
+#include <arch/x86/core.h>
 
 using namespace infos::arch::x86::acpi;
 using namespace infos::arch::x86;
@@ -88,7 +89,7 @@ struct MADT {
 
 static RSDPDescriptor *__rsdp;
 static uint32_t __ioapic_base;
-static List<Core> __cores;
+static Core __cores[256];
 static uint8_t __num_cores = 0;
 
 /**
@@ -160,10 +161,9 @@ static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
     if (lapic->flags) {
         // todo: this is a hack, check for BSP flag
 	    if (__num_cores == 0) state = Core::core_state::BOOTSTRAP;
-	    else state = Core::core_state::ONLINE;
+	    else state = Core::core_state::OFFLINE;
 
-        __cores.append(Core(lapic->acpi_processor_id, lapic->apic_id, state));
-        __num_cores++;
+        __cores[__num_cores++] = Core(lapic->acpi_processor_id, lapic->apic_id, state);
 	}
 
 	return true;
@@ -321,7 +321,15 @@ uint32_t infos::arch::x86::acpi::acpi_get_ioapic_base()
 /**
  * Returns the list of processor cores.
  */
-List<Core> infos::arch::x86::acpi::acpi_get_cores()
+Core* infos::arch::x86::acpi::acpi_get_cores()
 {
     return __cores;
+}
+
+/**
+ * Returns the number of processor cores.
+ */
+uint8_t infos::arch::x86::acpi::acpi_get_num_cores()
+{
+    return __num_cores;
 }
