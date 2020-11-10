@@ -110,6 +110,10 @@ __mpstart32:
     mov $0x80010007, %eax
     mov %eax, %cr0
 
+    mov $0x41,%al
+    mov $0xe9,%dx
+    outb %al,%dx
+
     // Initialise the temporary GDT
     lgdt mpgdt64p
 

@@ -14,3 +14,13 @@ using namespace infos::drivers;
 using namespace infos::drivers::timer;
 
 const DeviceClass Timer::TimerDeviceClass(Device::RootDeviceClass, "timer");
+
+void Timer::spin_delay(uint64_t nanoseconds)
+{
+    uint64_t period = (frequency() * nanoseconds) / 1000000000ull;
+    init_oneshot(period);
+
+    start();
+    while (!expired()) asm volatile("nop");
+    stop();
+}
