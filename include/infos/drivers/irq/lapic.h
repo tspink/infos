@@ -45,7 +45,29 @@ namespace infos
 					TDCR = 0x03E0, // Timer Divide Configuration
 				};
 			}
-			
+
+            struct ICR {
+                union {
+                    struct {
+                        // LO
+                        uint64_t vector : 8;
+                        uint64_t delivery_mode : 3;
+                        uint64_t dest_mode : 1;
+                        uint64_t reserved1 : 2;
+                        uint64_t level : 2;
+                        uint64_t reserved2 : 2;
+                        uint64_t dest_shorthand : 2;
+                        uint64_t reserved3 : 12;
+
+                        // HI
+                        uint64_t reserved4 : 24;
+                        uint64_t target : 4;
+                        uint64_t reserved5 : 4;
+                    };
+                    uint64_t bits;
+                };
+            } __packed;
+
 			class LAPIC : public Device
 			{
 			public:
@@ -77,6 +99,9 @@ namespace infos
 				uint32_t get_timer_current_count();
 				
 				kernel::IRQ& timer_irq() const { return *_timer_irq; }
+
+				void send_remote_init(int target, uint8_t pfn);
+				void send_remote_sipi(int target, uint8_t pfn);
 								
 			private:
 				class LAPICIRQ : public kernel::IRQ
@@ -120,6 +145,11 @@ namespace infos
 					uint32_t oldval = read(reg);
 					write(reg, oldval & (~value));
 				}
+
+                void set_icr(const ICR& value) {
+                    write(LAPICRegisters::ICRHI, (uint32_t)(value.bits >> 32));
+                    write(LAPICRegisters::ICRLO, (uint32_t)value.bits);
+                }
 			};
 		}
 	}

@@ -159,6 +159,30 @@ void LAPIC::set_timer_periodic()
 	set_flag(LAPICRegisters::TIMER, PERIODIC);
 }
 
+void LAPIC::send_remote_init(int target, uint8_t pfn)
+{
+    ICR v;
+    v.bits = 0;
+
+    v.target = target;
+    v.vector = pfn;
+    v.delivery_mode = 5;
+
+    set_icr(v);
+}
+
+void LAPIC::send_remote_sipi(int target, uint8_t pfn)
+{
+    ICR v;
+    v.bits = 0;
+
+    v.target = target;
+    v.vector = pfn;
+    v.delivery_mode = 6;
+
+    set_icr(v);
+}
+
 void LAPIC::LAPICIRQ::enable()
 {
 	_lapic.unmask_interrupts(_lvt);

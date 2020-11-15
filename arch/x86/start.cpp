@@ -172,8 +172,8 @@ extern "C" void __noreturn x86_init_top()
 		syslog.message(LogLevel::ERROR, "Unable to initialise the CPU");
 		goto init_error;
 	}
-		
-	x86_log.message(LogLevel::DEBUG, "Initialising boot modules");
+
+    x86_log.message(LogLevel::DEBUG, "Initialising boot modules");
 	if (!modules_init()) {
 		syslog.message(LogLevel::ERROR, "Unable to initialise boot modules");
 		goto init_error;
@@ -194,9 +194,17 @@ extern "C" void __noreturn x86_init_top()
 	// Start the system, and begin executing the second-half of the
 	// arch specific initialisation.
 	sys.start(x86_init_bottom);
-	
+
 init_error:
 	early_abort();
+}
+
+extern "C" __noreturn void x86_core_start()
+{
+    syslog.message(LogLevel::INFO, "Hello world from this core!");
+    //todo: initialise lapic
+
+    for (;;) asm volatile("pause");
 }
 
 extern "C" {

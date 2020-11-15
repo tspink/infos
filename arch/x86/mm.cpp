@@ -58,6 +58,7 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 
 // Ugly hack
 uint64_t *__template_pml4;
+const PageDescriptor *pages;
 
 /**
  * Usurps the initial page tables, and introduces new ones for the
@@ -68,7 +69,7 @@ uint64_t *__template_pml4;
 static bool reinitialise_pgt()
 {
 	// Allocate sixteen pages to mess around with.
-	const PageDescriptor *pages = sys.mm().pgalloc().alloc_pages(4);
+	pages = sys.mm().pgalloc().alloc_pages(4);
 	if (!pages) {
 		x86_log.message(LogLevel::ERROR, "The page allocator has not worked!");
 		return false;
@@ -143,6 +144,19 @@ static bool reinitialise_pgt()
 		pdp1_pd3[i] = (addr & ~0xfff) | 0x083;
 		addr += 0x200000;
 	}
+
+	// Zero page mapping for multicore startup
+    uint64_t *pdpz = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[9]);
+    uint64_t *pdz = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[10]);
+
+    pml4[0] = (kva_to_pa((virt_addr_t)pdpz) & ~0xfff) | 0x003;
+    pdpz[0] = (kva_to_pa((virt_addr_t)pdz) & ~0xfff) | 0x003;
+
+    uint64_t base_addr = 0;
+    for (int i = 0; i < 0x200; i++) {
+        pdz[i] = (base_addr & ~0xfffull) | 0x083;
+        base_addr += 0x200000;
+    }
 	
 	// Welp, here we go.  Reload the page tables
 	asm volatile ("mov %0, %%cr3" :: "r"(kva_to_pa((virt_addr_t)pml4)));
@@ -151,6 +165,11 @@ static bool reinitialise_pgt()
 	__template_pml4 = (uint64_t *)sys.mm().pgalloc().pgd_to_vpa(&pages[0]);
 	
 	return true;
+}
+
+void infos::arch::x86::mm_remove_multicore_mapping() {
+    uint64_t *pml4 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[0]);
+    pml4[0] = 0;
 }
 
 /**

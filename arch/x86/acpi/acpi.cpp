@@ -9,9 +9,12 @@
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <arch/x86/acpi/acpi.h>
+#include <infos/util/list.h>
 #include <infos/util/string.h>
+#include <arch/x86/core.h>
 
 using namespace infos::arch::x86::acpi;
+using namespace infos::arch::x86;
 using namespace infos::util;
 
 // ACPI Logging Component
@@ -86,8 +89,8 @@ struct MADT {
 
 static RSDPDescriptor *__rsdp;
 static uint32_t __ioapic_base;
-static uint8_t lapic_ids[256] = {0};
-static uint8_t num_cores = 0;
+static Core __cores[256];
+static uint8_t __num_cores = 0;
 
 /**
  * Scans memory for the RSDP by looking for the RSDP signature.  Returns a pointer to the RSDP descriptor, if it's
@@ -152,7 +155,17 @@ static bool is_structure_valid(const void *structure_base, size_t structure_size
 static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
 {
 	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: id=%u, procid=%u, flags=%x", lapic->apic_id, lapic->acpi_processor_id, lapic->flags);
-	lapic_ids[num_cores++] = lapic->apic_id;
+	// If neither bit 0 or bit 1 are set then the CPU
+    // cannot be enabled and the OS should not try
+    Core::core_state state;
+    if (lapic->flags) {
+        // todo: this is a hack, check for BSP flag
+	    if (__num_cores == 0) state = Core::core_state::BOOTSTRAP;
+	    else state = Core::core_state::OFFLINE;
+
+        __cores[__num_cores++] = Core(lapic->acpi_processor_id, lapic->apic_id, state);
+	}
+
 	return true;
 }
 
@@ -221,7 +234,7 @@ static bool parse_madt(const MADT *madt)
 		rhs = (const MADTRecordHeader *)((uintptr_t)rhs + rhs->length);
 	}
 
-    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: %u cores found", num_cores);
+    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: %u cores found", __num_cores);
 
     return true;
 }
@@ -303,4 +316,20 @@ bool infos::arch::x86::acpi::acpi_init()
 uint32_t infos::arch::x86::acpi::acpi_get_ioapic_base()
 {
 	return __ioapic_base;
+}
+
+/**
+ * Returns the list of processor cores.
+ */
+Core* infos::arch::x86::acpi::acpi_get_cores()
+{
+    return __cores;
+}
+
+/**
+ * Returns the number of processor cores.
+ */
+uint8_t infos::arch::x86::acpi::acpi_get_num_cores()
+{
+    return __num_cores;
 }
