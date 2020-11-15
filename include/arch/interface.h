@@ -1,1 +1,0 @@
-/disk/scratch/spink/infos/include/arch/x86/interface.h

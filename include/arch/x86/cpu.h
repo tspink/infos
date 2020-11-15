@@ -11,6 +11,9 @@
 #pragma once
 
 #include <infos/kernel/cpu.h>
+#include <infos/drivers/timer/pit.h>
+#include <infos/drivers/irq/lapic.h>
+#include <infos/drivers/irq/ioapic.h>
 
 namespace infos
 {
@@ -23,6 +26,10 @@ namespace infos
 			public:
 				X86CPU();
 			};
+
+            void start_core(Core* core, infos::drivers::irq::LAPIC* lapic, infos::drivers::timer::PIT* pit);
+
+            extern kernel::ComponentLog cpu_log;
 		}
 	}
 }

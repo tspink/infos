@@ -25,12 +25,11 @@ namespace infos {
 			extern bool platform_init(void);
 			extern bool mm_init(void);
 			extern bool mm_pf_init(void);
+            extern bool cpu_init(void);
             extern void mm_remove_multicore_mapping(void);
 			extern bool modules_init(void);
 			extern bool sched_init(void);
 
-            extern bool cpu_init(void);
-            extern void start_core(infos::arch::x86::Core*, infos::drivers::irq::LAPIC*,infos::drivers::timer::PIT*);
             extern bool timer_init(void);
 			extern bool console_init(void);
 			extern bool activate_console(void);

@@ -202,6 +202,8 @@ init_error:
 extern "C" __noreturn void x86_core_start()
 {
     syslog.message(LogLevel::INFO, "Hello world from this core!");
+    //todo: initialise lapic
+
     for (;;) asm volatile("pause");
 }
 
