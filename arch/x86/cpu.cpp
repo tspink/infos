@@ -112,26 +112,25 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     volatile uint8_t *ready_flag = (volatile uint8_t *)pa_to_vpa(mpready_offset);
     *ready_flag = 0;
 
+    // send init and wait 10ms
     cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", processor_id);
     lapic->send_remote_init(processor_id, 0);
-
-    // wait 10ms
     pit->spin_delay(10000000);
+
+    // send sipi and wait 1ms
     cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending sipi to core %u", processor_id);
     lapic->send_remote_sipi(processor_id, 0);
-
-    // wait 1ms
     pit->spin_delay(1000000);
 
     if (!*ready_flag) {
+        // send second sipi and wait 1s
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "resending sipi to core %u", processor_id);
         lapic->send_remote_sipi(processor_id,0);
-        // wait 1s
         pit->spin_delay(1000000000);
     }
 
     if (!*ready_flag) {
-        cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u error", processor_id);
+        cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u error, skipping", processor_id);
     } else {
         core->set_state(Core::core_state::ONLINE);
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u ready", processor_id);

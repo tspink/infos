@@ -21,7 +21,7 @@ namespace infos {
 #define MSR_SFMASK 0xc0000084
 
 #define MSR_APIC_BASE 0x1b
-			
+
 #define MSR_FS_BASE 0xc0000100
 #define MSR_GS_BASE 0xc0000101
 

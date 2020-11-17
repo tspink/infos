@@ -82,13 +82,14 @@ struct MADTRecordInterruptSourceOverride {
 
 struct MADT {
 	SDTHeader header;
-	uint32_t lca;
+	uint32_t lca; // Local APIC address
 	uint32_t flags;
 	MADTRecordHeader records;		// VARIABLE LENGTH
 } __packed;
 
 static RSDPDescriptor *__rsdp;
 static uint32_t __ioapic_base;
+static uint8_t __bsp_apic_id;
 static Core __cores[256];
 static uint8_t __num_cores = 0;
 
@@ -155,16 +156,17 @@ static bool is_structure_valid(const void *structure_base, size_t structure_size
 static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
 {
 	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: id=%u, procid=%u, flags=%x", lapic->apic_id, lapic->acpi_processor_id, lapic->flags);
-	// If neither bit 0 or bit 1 are set then the CPU
-    // cannot be enabled and the OS should not try
-    Core::core_state state;
-    if (lapic->flags) {
-        // todo: this is a hack, check for BSP flag
-	    if (__num_cores == 0) state = Core::core_state::BOOTSTRAP;
-	    else state = Core::core_state::OFFLINE;
+    // New core's default state
+	Core::core_state state = Core::core_state::OFFLINE;
 
-        __cores[__num_cores++] = Core(lapic->acpi_processor_id, lapic->apic_id, state);
-	}
+    // If the LAPIC flags are not set then the
+    // CPU is unusable and the OS should not try enable it
+    if (!lapic->flags) state = Core::core_state::ERROR;
+    // Check if the core's APIC ID matches the BSP's APIC ID
+    else if (lapic->apic_id == __bsp_apic_id) state = Core::core_state::BOOTSTRAP;
+
+    // Create core object
+    __cores[__num_cores++] = Core(lapic->acpi_processor_id, lapic->apic_id, state);
 
 	return true;
 }
@@ -200,8 +202,13 @@ static bool parse_madt_iso(const MADTRecordInterruptSourceOverride *iso)
 static bool parse_madt(const MADT *madt)
 {
 	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lca=%08x, flags=%x", madt->lca, madt->flags);
-	
-	const MADTRecordHeader *rhs = &madt->records;
+
+	// Get APIC ID of BSP LAPIC
+    __bsp_apic_id = *(uint64_t *)pa_to_vpa(madt->lca + 0x020);
+
+    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: bsp apic id=%u", __bsp_apic_id);
+
+    const MADTRecordHeader *rhs = &madt->records;
 	const MADTRecordHeader *rhe = (const MADTRecordHeader *)((uintptr_t)madt + madt->header.length);
 	
 	while (rhs < rhe) {
