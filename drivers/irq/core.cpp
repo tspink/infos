@@ -1,11 +1,15 @@
-#include <arch/x86/core.h>
+#include <infos/drivers/irq/core.h>
 
 using namespace infos::drivers;
-using namespace infos::arch::x86;
+using namespace infos::drivers::irq;
 
-Core::Core() {}
+const DeviceClass infos::drivers::irq::Core::CoreDeviceClass(RootDeviceClass, "core");
+
 Core::Core(uint8_t processor_id, uint8_t lapic_id, core_state state) :
-    processor_id(processor_id), lapic_id(lapic_id), state(state) {}
+        processor_id(processor_id), lapic_id(lapic_id), state(state) {}
+
+bool Core::init(kernel::DeviceManager& dm) { return true; }
+
 uint8_t Core::get_processor_id() { return processor_id; }
 uint8_t Core::get_lapic_id() { return lapic_id; }
 Core::core_state Core::get_state() { return state; }

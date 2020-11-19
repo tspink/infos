@@ -1,17 +1,12 @@
-/* SPDX-License-Identifier: MIT */
-
 #pragma once
 
 #include <infos/drivers/device.h>
 #include <infos/kernel/irq.h>
 
-namespace infos
-{
-    namespace arch
-    {
-        namespace x86
-        {
-            class Core {
+namespace infos {
+    namespace drivers {
+        namespace irq {
+            class Core : public Device {
             public:
                 enum class core_state {
                     BOOTSTRAP,
@@ -20,7 +15,11 @@ namespace infos
                     ERROR
                 };
 
-                Core();
+                static const DeviceClass CoreDeviceClass;
+                const DeviceClass& device_class() const override { return CoreDeviceClass; }
+
+                bool init(kernel::DeviceManager& dm) override;
+
                 Core(uint8_t processor_id, uint8_t lapic_id, core_state state);
                 uint8_t get_processor_id();
                 uint8_t get_lapic_id();
@@ -32,10 +31,7 @@ namespace infos
                 uint8_t processor_id;
                 uint8_t lapic_id;
                 core_state state;
-                // todo: maybe flags too?
             };
         }
     }
 }
-
-

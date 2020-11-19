@@ -63,14 +63,13 @@ bool infos::arch::x86::cpu_init()
     if (!sys.device_manager().register_device(*ioapic))
         return false;
 
-    Core* cores = infos::arch::x86::acpi::acpi_get_cores();
-    uint8_t num_cores = infos::arch::x86::acpi::acpi_get_num_cores();
+    List<Core*> _cores = infos::arch::x86::acpi::acpi_get_cores();
 
-    for (int i = 0; i < num_cores; i++) {
-        // skip BSP and error cores
-        if (cores[i].get_state() == Core::core_state::OFFLINE) {
-            // start the core!
-            start_core(&cores[i], lapic, pit);
+    for (Core *core : _cores) {
+        // Skip BSP and error cores
+        if (core->get_state() == Core::core_state::OFFLINE) {
+            // Start the core!
+            start_core(core, lapic, pit);
         }
     }
 

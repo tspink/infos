@@ -13,7 +13,6 @@
 #include <infos/define.h>
 #include <infos/drivers/irq/lapic.h>
 #include <infos/drivers/timer/pit.h>
-#include <arch/x86/core.h>
 
 namespace infos {
 	namespace kernel {

@@ -52,7 +52,7 @@ namespace infos {
 			}
 			
 			const util::Map<util::String::hash_type, drivers::Device *>& devices() const { return _devices; }
-			
+
 		private:
 			util::Map<util::String::hash_type, drivers::Device *> _devices;
 		};

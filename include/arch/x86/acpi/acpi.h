@@ -3,7 +3,7 @@
 #pragma once
 
 #include <infos/kernel/log.h>
-#include <arch/x86/core.h>
+#include <infos/drivers/irq/core.h>
 
 namespace infos
 {
@@ -15,8 +15,7 @@ namespace infos
 			{
 				bool acpi_init();
 				uint32_t acpi_get_ioapic_base();
-				Core* acpi_get_cores();
-				uint8_t acpi_get_num_cores();
+				util::List<drivers::irq::Core*> acpi_get_cores();
 
 				extern kernel::ComponentLog acpi_log;
 			}

@@ -11,11 +11,13 @@
 #include <arch/x86/acpi/acpi.h>
 #include <infos/util/list.h>
 #include <infos/util/string.h>
-#include <arch/x86/core.h>
+#include <infos/drivers/irq/core.h>
+#include <infos/kernel/kernel.h>
 
 using namespace infos::arch::x86::acpi;
 using namespace infos::arch::x86;
 using namespace infos::util;
+using namespace infos::drivers::irq;
 
 // ACPI Logging Component
 infos::kernel::ComponentLog infos::arch::x86::acpi::acpi_log(infos::kernel::syslog, "acpi");
@@ -90,8 +92,7 @@ struct MADT {
 static RSDPDescriptor *__rsdp;
 static uint32_t __ioapic_base;
 static uint8_t __bsp_apic_id;
-static Core __cores[256];
-static uint8_t __num_cores = 0;
+List<Core*> __cores;
 
 /**
  * Scans memory for the RSDP by looking for the RSDP signature.  Returns a pointer to the RSDP descriptor, if it's
@@ -165,8 +166,10 @@ static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
     // Check if the core's APIC ID matches the BSP's APIC ID
     else if (lapic->apic_id == __bsp_apic_id) state = Core::core_state::BOOTSTRAP;
 
-    // Create core object
-    __cores[__num_cores++] = Core(lapic->acpi_processor_id, lapic->apic_id, state);
+    // Create core object and register with device manager
+    Core *core = new Core(lapic->acpi_processor_id, lapic->apic_id, state);
+    infos::kernel::sys.device_manager().register_device(*core);
+    __cores.push(core);
 
 	return true;
 }
@@ -241,7 +244,7 @@ static bool parse_madt(const MADT *madt)
 		rhs = (const MADTRecordHeader *)((uintptr_t)rhs + rhs->length);
 	}
 
-    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: %u cores found", __num_cores);
+    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: %u cores found", __cores.count());
 
     return true;
 }
@@ -328,15 +331,7 @@ uint32_t infos::arch::x86::acpi::acpi_get_ioapic_base()
 /**
  * Returns the list of processor cores.
  */
-Core* infos::arch::x86::acpi::acpi_get_cores()
+List<Core*> infos::arch::x86::acpi::acpi_get_cores()
 {
     return __cores;
-}
-
-/**
- * Returns the number of processor cores.
- */
-uint8_t infos::arch::x86::acpi::acpi_get_num_cores()
-{
-    return __num_cores;
 }
