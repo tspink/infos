@@ -167,6 +167,7 @@ static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
     else if (lapic->apic_id == __bsp_apic_id) state = Core::core_state::BOOTSTRAP;
 
     // Create core object and register with device manager
+    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: registering core %u with device manager", lapic->acpi_processor_id);
     Core *core = new Core(lapic->acpi_processor_id, lapic->apic_id, state);
     infos::kernel::sys.device_manager().register_device(*core);
     __cores.push(core);
