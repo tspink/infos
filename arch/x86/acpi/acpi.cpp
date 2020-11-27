@@ -91,8 +91,7 @@ struct MADT {
 
 static RSDPDescriptor *__rsdp;
 static uint32_t __ioapic_base;
-static uint8_t __bsp_apic_id;
-List<Core*> __cores;
+static uint32_t __bsp_apic_id;
 
 /**
  * Scans memory for the RSDP by looking for the RSDP signature.  Returns a pointer to the RSDP descriptor, if it's
@@ -156,7 +155,8 @@ static bool is_structure_valid(const void *structure_base, size_t structure_size
  */
 static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
 {
-	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: id=%u, procid=%u, flags=%x", lapic->apic_id, lapic->acpi_processor_id, lapic->flags);
+	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: id=%u, procid=%u, flags=%x",
+	        lapic->apic_id, lapic->acpi_processor_id, lapic->flags);
     // New core's default state
 	Core::core_state state = Core::core_state::OFFLINE;
 
@@ -167,10 +167,10 @@ static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
     else if (lapic->apic_id == __bsp_apic_id) state = Core::core_state::BOOTSTRAP;
 
     // Create core object and register with device manager
-    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: registering core %u with device manager", lapic->acpi_processor_id);
+//    acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lapic: registering core %u "
+//                                                      "with device manager", lapic->acpi_processor_id);
     Core *core = new Core(lapic->acpi_processor_id, lapic->apic_id, state);
     infos::kernel::sys.device_manager().register_device(*core);
-    __cores.push(core);
 
 	return true;
 }
@@ -208,7 +208,7 @@ static bool parse_madt(const MADT *madt)
 	acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: lca=%08x, flags=%x", madt->lca, madt->flags);
 
 	// Get APIC ID of BSP LAPIC
-    __bsp_apic_id = *(uint64_t *)pa_to_vpa(madt->lca + 0x020);
+    __bsp_apic_id = *(uint32_t *)pa_to_vpa(madt->lca + 0x020);
 
     acpi_log.messagef(infos::kernel::LogLevel::DEBUG, "madt: bsp apic id=%u", __bsp_apic_id);
 
@@ -327,12 +327,4 @@ bool infos::arch::x86::acpi::acpi_init()
 uint32_t infos::arch::x86::acpi::acpi_get_ioapic_base()
 {
 	return __ioapic_base;
-}
-
-/**
- * Returns the list of processor cores.
- */
-List<Core*> infos::arch::x86::acpi::acpi_get_cores()
-{
-    return __cores;
 }

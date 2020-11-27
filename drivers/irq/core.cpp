@@ -15,3 +15,4 @@ uint8_t Core::get_lapic_id() { return lapic_id; }
 Core::core_state Core::get_state() { return state; }
 
 void Core::set_state(Core::core_state) { Core::state = state; }
+void Core::set_lapic_ptr(LAPIC *lapic_ptr) { Core::lapic_ptr = lapic_ptr; }

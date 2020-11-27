@@ -15,6 +15,8 @@
 #include <arch/x86/qemu-stream.h>
 #include <arch/x86/context.h>
 #include <arch/x86/acpi/acpi.h>
+#include <arch/x86/cpu.h>
+#include <arch/x86/msr.h>
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
 #include <infos/util/string.h>
@@ -23,6 +25,7 @@
 
 using namespace infos::arch::x86;
 using namespace infos::arch::x86::acpi;
+using namespace infos::drivers::irq;
 using namespace infos::kernel;
 using namespace infos::util;
 
@@ -201,8 +204,19 @@ init_error:
 
 extern "C" __noreturn void x86_core_start()
 {
-    syslog.message(LogLevel::INFO, "Hello world from this core!");
-    //todo: initialise lapic
+    // Create and register the AP's LAPIC object.
+    LAPIC *lapic = register_lapic();
+
+    uint32_t apic_id = lapic->get_id();
+    List<Core *> _cores = sys.device_manager().cores();
+
+    for (Core *core : _cores) {
+        // Find the core object for the currently executing core
+        if (core->get_lapic_id() == apic_id) {
+            // Give the core a reference to its new LAPIC object
+            core->set_lapic_ptr(lapic);
+        }
+    }
 
     for (;;) asm volatile("pause");
 }

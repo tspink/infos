@@ -102,7 +102,8 @@ namespace infos
 
 				void send_remote_init(int target, uint8_t pfn);
 				void send_remote_sipi(int target, uint8_t pfn);
-								
+                uint32_t get_id();
+
 			private:
 				class LAPICIRQ : public kernel::IRQ
 				{

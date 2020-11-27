@@ -2,6 +2,7 @@
 
 #include <infos/drivers/device.h>
 #include <infos/kernel/irq.h>
+#include "lapic.h"
 
 namespace infos {
     namespace drivers {
@@ -26,11 +27,15 @@ namespace infos {
                 core_state get_state();
 
                 void set_state(core_state state);
+                void set_lapic_ptr(LAPIC *lapic);
+
+                //todo: have a private runqueue!
 
             private:
                 uint8_t processor_id;
                 uint8_t lapic_id;
                 core_state state;
+                LAPIC *lapic_ptr;
             };
         }
     }

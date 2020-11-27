@@ -10,6 +10,7 @@
  */
 #include <infos/drivers/irq/lapic.h>
 #include <arch/x86/x86-arch.h>
+#include <infos/kernel/log.h>
 
 #define MASKED     0x00010000   // Interrupt masked
 
@@ -181,6 +182,11 @@ void LAPIC::send_remote_sipi(int target, uint8_t pfn)
     v.delivery_mode = 6;
 
     set_icr(v);
+}
+
+uint32_t LAPIC::get_id() {
+    uint32_t apic_id = read(LAPICRegisters::ID);
+    return (apic_id >> 24) & 0xff;
 }
 
 void LAPIC::LAPICIRQ::enable()

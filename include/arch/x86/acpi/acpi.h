@@ -15,8 +15,6 @@ namespace infos
 			{
 				bool acpi_init();
 				uint32_t acpi_get_ioapic_base();
-				util::List<drivers::irq::Core*> acpi_get_cores();
-
 				extern kernel::ComponentLog acpi_log;
 			}
 		}

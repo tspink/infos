@@ -16,6 +16,7 @@
 #include <infos/util/list.h>
 #include <infos/util/generator.h>
 #include <infos/util/map.h>
+#include <infos/drivers/irq/core.h>
 
 namespace infos {
 	namespace kernel {
@@ -25,8 +26,9 @@ namespace infos {
 
 			bool register_device(drivers::Device& device);
 			bool add_device_alias(const util::String& name, drivers::Device& device);
+            util::List<infos::drivers::irq::Core *> cores();
 
-			template<class T>
+            template<class T>
 			bool try_get_device_by_class(const drivers::DeviceClass& device_class, T*& __out_device) const
 			{
 				for (auto dev : _devices) {

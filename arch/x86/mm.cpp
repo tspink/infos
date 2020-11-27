@@ -145,7 +145,7 @@ static bool reinitialise_pgt()
 		addr += 0x200000;
 	}
 
-	// Zero page mapping for multicore startup
+	// Page zero mapping for multicore startup
     uint64_t *pdpz = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[9]);
     uint64_t *pdz = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[10]);
 
