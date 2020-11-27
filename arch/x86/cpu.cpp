@@ -32,7 +32,6 @@ infos::kernel::ComponentLog infos::arch::x86::cpu_log(infos::kernel::syslog, "cp
  */
 bool infos::arch::x86::cpu_init()
 {
-    // todo: model this properly
     // Create and register the BSP's LAPIC object.
     LAPIC *lapic = register_lapic();
     if (!lapic) // Some error returned NULL
