@@ -11,12 +11,6 @@ __mpstart16:
     // Disable interrupts
     cli
 
-    // If we've got this far, then the AP is online, so indicate this
-    // back to the BSP, by setting the 'mpready' flag to one.
-    mov $mpready, %eax
-    sub $_MPSTARTUP_START, %eax
-    movb $1, (%eax)
-
     // Prepare the AP temporary 32-bit GDT
     mov $mpgdt32p, %eax
     sub $_MPSTARTUP_START, %eax
@@ -178,10 +172,26 @@ __mpstart64:
     mov %rax, %rsp
 
     // Jump to the x86 initialisation entrypoint
+    mov $core_obj, %rax
+    sub $_MPSTARTUP_START, %rax
+    mov (%rax), %rdi
+
+    // If we've got this far, then the AP is online, so indicate this
+    // back to the BSP, by setting the 'mpready' flag to one.
+    mov $mpready, %eax
+    sub $_MPSTARTUP_START, %eax
+    movb $1, (%eax)
+
     jmp x86_core_start
 .size __mpstart64,.-__mpstart64
 
 .section .mpstart.data, "aw"
+
+.align 4
+.globl core_obj
+.type core_obj, %object
+core_obj:  .quad 0
+.size core_obj,.-core_obj
 
 .align 8
 .globl mpstack

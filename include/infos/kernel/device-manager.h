@@ -17,6 +17,8 @@
 #include <infos/util/generator.h>
 #include <infos/util/map.h>
 #include <infos/drivers/irq/core.h>
+#include <infos/drivers/timer/lapic-timer.h>
+#include <infos/util/lock.h>
 
 namespace infos {
 	namespace kernel {
@@ -57,6 +59,7 @@ namespace infos {
 
 		private:
 			util::Map<util::String::hash_type, drivers::Device *> _devices;
+            util::Mutex _mtx;
 		};
 	}
 }

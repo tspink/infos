@@ -11,6 +11,7 @@
 #include <infos/drivers/irq/lapic.h>
 #include <arch/x86/x86-arch.h>
 #include <infos/kernel/log.h>
+//#include <infos/kernel.h>
 
 #define MASKED     0x00010000   // Interrupt masked
 
@@ -69,15 +70,15 @@ bool LAPIC::init(kernel::DeviceManager& dm)
 	while (read(LAPICRegisters::ICRLO) & DELIVS);
 	
 	write(LAPICRegisters::TPR, 0);
-	
-	// Initialise the timer IRQ
+
+    // Initialise the timer IRQ
 	_timer_irq = new LAPICIRQ(*this, Timer);
 	if (!x86arch.irq_manager().attach_irq(_timer_irq)) {
 		return false;
 	}
-	
-	set_timer_irq(_timer_irq->nr());
-	return true;
+
+    set_timer_irq(_timer_irq->nr());
+    return true;
 }
 
 void LAPIC::eoi()

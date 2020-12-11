@@ -29,12 +29,14 @@ namespace infos {
 
 				LAPICTimer();
 
-				const DeviceClass& device_class() const override {
+                void set_lapic_ptr(drivers::irq::LAPIC * lapic);
+
+                const DeviceClass& device_class() const override {
 					return LAPICTimerDeviceClass;
 				}
 				
 				bool init(kernel::DeviceManager& dm) override;
-				
+
 				void init_oneshot(uint64_t period) override;
 				void init_periodic(uint64_t period) override;
 

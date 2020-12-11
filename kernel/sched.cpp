@@ -67,7 +67,7 @@ bool Scheduler::init()
 	// Install the discovered algorithm.
 	_algorithm = algo;
 
-	// Start the idle process thread, and forcibly activate it.  This is so that
+    // Start the idle process thread, and forcibly activate it.  This is so that
 	// when interrupts are enabled, the idle thread becomes the context that is
 	// saved and restored.
 	idle_process->start();

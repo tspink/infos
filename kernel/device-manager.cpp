@@ -28,18 +28,19 @@ DeviceManager::DeviceManager(Kernel& owner) : Subsystem(owner)
 bool DeviceManager::register_device(drivers::Device& device)
 {	
 	uint64_t instance = device.device_class().acquire_instance();
-	
 	device.assign_name(String(device.device_class().name) + ToString(instance));
-	
-	dm_log.messagef(LogLevel::DEBUG, "registering device '%s'", device.name().c_str());
-	_devices.add(device.name().get_hash(), &device);
-		
-	if (!device.init(*this)) {
+    dm_log.messagef(LogLevel::DEBUG, "registering device '%s'", device.name().c_str());
+
+    _mtx.lock();
+    _devices.add(device.name().get_hash(), &device);
+    _mtx.unlock();
+
+    if (!device.init(*this)) {
 		dm_log.messagef(LogLevel::ERROR, "device '%s' failed to initialise", device.name().c_str());
 		return false;
 	}
-	
-	return true;
+
+    return true;
 }
 
 bool DeviceManager::add_device_alias(const util::String& name, drivers::Device& device)

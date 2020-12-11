@@ -39,7 +39,8 @@ extern void user_syscall_handler(const IRQ *irq, void *priv);
 
 static void general_protection_fault(const IRQ *irq, void *priv)
 {
-	x86_log.message(LogLevel::FATAL, "EXCEPTION: General Protection Fault");
+    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
+	x86_log.messagef(LogLevel::FATAL, "EXCEPTION: General Protection Fault from core %u", apic_id);
 	sys.arch().dump_current_context();
 	arch_abort();
 }

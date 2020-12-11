@@ -13,6 +13,7 @@
 #include <arch/x86/multiboot.h>
 #include <arch/x86/early-screen.h>
 #include <arch/x86/qemu-stream.h>
+#include <arch/x86/dt.h>
 #include <arch/x86/context.h>
 #include <arch/x86/acpi/acpi.h>
 #include <arch/x86/cpu.h>
@@ -22,6 +23,8 @@
 #include <infos/util/string.h>
 #include <infos/util/map.h>
 #include <infos/util/printf.h>
+#include <arch/x86/cpuid.h>
+#include <infos/drivers/timer/lapic-timer.h>
 
 using namespace infos::arch::x86;
 using namespace infos::arch::x86::acpi;
@@ -170,30 +173,30 @@ extern "C" void __noreturn x86_init_top()
 		goto init_error;
 	}
 
-	x86_log.message(LogLevel::DEBUG, "Initialising CPU");
-	if (!cpu_init()) {
-		syslog.message(LogLevel::ERROR, "Unable to initialise the CPU");
-		goto init_error;
-	}
-
     x86_log.message(LogLevel::DEBUG, "Initialising boot modules");
 	if (!modules_init()) {
 		syslog.message(LogLevel::ERROR, "Unable to initialise boot modules");
 		goto init_error;
 	}
-	
-	x86_log.message(LogLevel::DEBUG, "Initialising timer");
-	if (!timer_init()) {
-		syslog.message(LogLevel::ERROR, "Unable to initialise timer");
-		goto init_error;
-	}
-		
+
 	x86_log.message(LogLevel::DEBUG, "Initialising scheduler");
 	if (!sched_init()) {
 		syslog.message(LogLevel::ERROR, "Unable to initialise scheduler");
 		goto init_error;
 	}
-	
+
+    x86_log.message(LogLevel::DEBUG, "Initialising timer");
+    if (!timer_init()) {
+        syslog.message(LogLevel::ERROR, "Unable to initialise timer");
+        goto init_error;
+    }
+
+    x86_log.message(LogLevel::DEBUG, "Initialising CPU");
+    if (!cpu_init()) {
+        syslog.message(LogLevel::ERROR, "Unable to initialise the CPU");
+        goto init_error;
+    }
+
 	// Start the system, and begin executing the second-half of the
 	// arch specific initialisation.
 	sys.start(x86_init_bottom);
@@ -202,23 +205,52 @@ init_error:
 	early_abort();
 }
 
-extern "C" __noreturn void x86_core_start()
+extern "C" __noreturn void x86_core_start(Core* core_object)
 {
+    gdt.reload();
+    idt.reload();
+
+    // NOTE: MUST BE IN THE ORDER
+    // BSP SCHED INIT, BSP TIMER INIT,
+    // AP SCHED INIT, AP TIMER INIT
+    // Because the scheudler starts an idle process later used during timer init
+    // when we come to use mutex locks and call the yield syscall
+
+    syslog.messagef(LogLevel::DEBUG, "Hello world from core %u!", core_object->get_lapic_id());
+
+    // Initialise the AP's scheduler so the core has an
+    // idle process and is set up to take interrupts
+    core_object->get_sched_ptr()->init();
+
     // Create and register the AP's LAPIC object.
     LAPIC *lapic = register_lapic();
+    core_object->set_lapic_ptr(lapic);
 
-    uint32_t apic_id = lapic->get_id();
-    List<Core *> _cores = sys.device_manager().cores();
+    // Read the CPU feature set.
+    CPUIDFeatures::CPUIDFeatures features = cpuid_get_features();
 
-    for (Core *core : _cores) {
-        // Find the core object for the currently executing core
-        if (core->get_lapic_id() == apic_id) {
-            // Give the core a reference to its new LAPIC object
-            core->set_lapic_ptr(lapic);
-        }
+    // The timer requires the APIC, so check that it is present.
+    if (!(features.rdx & CPUIDFeatures::APIC)) {
+        syslog.message(LogLevel::ERROR, "APIC not present");
     }
 
+    // Create and register the LAPIC timer. When calibrating, the LAPIC uses the PIT as a
+    // reference timer. The PIT is registered in cpu_init and presence is checked during
+    // LAPIC init before the LAPIC begins to calibrate.
+    infos::drivers::timer::LAPICTimer *lapic_timer = new infos::drivers::timer::LAPICTimer();
+    lapic_timer->set_lapic_ptr(lapic);
+
+    if (!sys.device_manager().register_device(*lapic_timer))
+        syslog.message(LogLevel::ERROR, "LAPIC Timer failed to initialise");
+
+    // Set the timer to be periodic, with a period of 10ms, and start
+    // the timer.
+    lapic_timer->init_periodic((lapic_timer->frequency() >> 4) / 100);
+    lapic_timer->start();
+
     for (;;) asm volatile("pause");
+
+
 }
 
 extern "C" {

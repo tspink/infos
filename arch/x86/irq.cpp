@@ -18,6 +18,7 @@
 using namespace infos::arch;
 using namespace infos::arch::x86;
 using namespace infos::kernel;
+using namespace infos::util;
 
 // An array containing pointers to the IRQ entry-point functions
 static irq_entry_point_t irq_entry_points[] = {
@@ -178,12 +179,26 @@ bool IRQManager::attach_irq(kernel::IRQ* irq)
 	// finding a descriptor that doesn't have an associated IRQ object.
 	for (unsigned int i = 0x20; i < 0x100; i++) {
 		if (irq_descriptors[i].irq() == NULL) {
-			// If one is found, connect the IRQ object to the descriptor,
-			// and assign its number.
-			irq_descriptors[i].irq(irq);
-			irq->assign(i);
+            // If one is found, acquire a lock and check that the descriptor hasn't
+            // been claimed by another CPU while you were acquiring the lock
+//            _mtx.lock();
+//            UniqueLock<Mutex> l(_mtx);
+//            if (irq_descriptors[i].irq() != NULL) {
+//                lock->unlock();
+//                break;
+//            }
 
-			return true;
+// todo: please fix this, there might be a race on irq_descriptors ?!
+
+            if (irq_descriptors[i].irq() == NULL) {
+                // Connect the IRQ object to the descriptor, and assign its number.
+                irq_descriptors[i].irq(irq);
+//                _mtx.unlock();
+                irq->assign(i);
+                return true;
+            }
+
+//            _mtx.unlock();
 		}
 	}
 	

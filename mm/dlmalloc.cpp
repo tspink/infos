@@ -596,7 +596,7 @@ int errno;
 #define USE_DL_PREFIX 1
 #define NO_MALLOC_STATS 1
 
-#define USE_SPINLOCKS
+#define USE_LOCKS 1
 #ifndef WIN32
 #ifdef _WIN32
 #define WIN32 1

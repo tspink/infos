@@ -10,7 +10,9 @@
  */
 #include <arch/x86/init.h>
 #include <arch/x86/multiboot.h>
+#include <arch/x86/msr.h>
 #include <arch/x86/cpuid.h>
+#include <arch/x86/acpi/acpi.h>
 
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
@@ -21,6 +23,8 @@
 #include <infos/drivers/input/keyboard.h>
 #include <infos/drivers/timer/lapic-timer.h>
 #include <infos/drivers/pci/pci-bus.h>
+#include <infos/drivers/irq/lapic.h>
+#include <infos/drivers/irq/ioapic.h>
 
 #include <infos/util/cmdline.h>
 #include <infos/util/string.h>
@@ -51,7 +55,7 @@ using namespace infos::kernel;
 using namespace infos::util;
 
 /**
- * Initialise the main system timer.
+ * Initialise the main system timer on the BSP.
  * @return Returns TRUE if the timer was successfully initialised, or FALSE otherwise.
  */
 bool infos::arch::x86::timer_init()
@@ -65,13 +69,45 @@ bool infos::arch::x86::timer_init()
 		return false;
 	}
 
-    // Create and register the LAPIC timer. When calibrating, the LAPIC uses the PIT as a
-    // reference timer. The PIT is registered in cpu_init and presence is checked during
-    // LAPIC init before the LAPIC begins to calibrate.
-	LAPICTimer *lapic_timer = new LAPICTimer();
-	if (!sys.device_manager().register_device(*lapic_timer))
-		return false;
-	
+    // Determine the LAPIC base address.
+    uint64_t lapic_base = __rdmsr(MSR_APIC_BASE) & ~0xfff;
+    if (!lapic_base) {
+        syslog.message(LogLevel::ERROR, "Invalid LAPIC base address");
+        return false;
+    }
+
+    // Determine the IOAPIC base address.
+    uint32_t ioapic_base = infos::arch::x86::acpi::acpi_get_ioapic_base();
+
+    // Print out some information about the memory-mapped location of these
+    // structures.
+    syslog.messagef(LogLevel::DEBUG, "LAPIC base=%lx, IOAPIC base=%lx", lapic_base, ioapic_base);
+
+    // Create and register the BSP's LAPIC object.
+    LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
+    if (!sys.device_manager().register_device(*lapic))
+        return false;
+
+    // Create and register an IOAPIC object.
+    IOAPIC *ioapic = new IOAPIC(pa_to_vpa(ioapic_base));
+    if (!sys.device_manager().register_device(*ioapic))
+        return false;
+
+    // Create and register a PIT (Programmable Interrupt Timer).  This isn't used as
+    // the system timer, but rather as a reference timer for calibrating the LAPIC
+    // timer.
+    PIT *pit = new PIT();
+    if (!sys.device_manager().register_device(*pit))
+        return false;
+
+    // Finally, create and register the BSP's LAPIC timer. The LAPIC timer will
+    // calibrate itself as part of its initialisation, and so the PIT
+    // must be registered beforehand.
+    LAPICTimer *lapic_timer = new LAPICTimer();
+    lapic_timer->set_lapic_ptr(lapic);
+    if (!sys.device_manager().register_device(*lapic_timer))
+        return false;
+
 	// Set the timer to be periodic, with a period of 10ms, and start
 	// the timer.
 	lapic_timer->init_periodic((lapic_timer->frequency() >> 4) / 100);

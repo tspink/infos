@@ -14,6 +14,8 @@
 #include <arch/x86/acpi/acpi.h>
 
 #include <infos/define.h>
+#include <arch/x86/cpuid.h>
+#include <infos/drivers/timer/lapic-timer.h>
 
 using namespace infos::kernel;
 using namespace infos::arch;
@@ -32,24 +34,13 @@ infos::kernel::ComponentLog infos::arch::x86::cpu_log(infos::kernel::syslog, "cp
  */
 bool infos::arch::x86::cpu_init()
 {
-    // Create and register the BSP's LAPIC object.
-    LAPIC *lapic = register_lapic();
-    if (!lapic) // Some error returned NULL
+    LAPIC *lapic;
+    if (!sys.device_manager().try_get_device_by_class(LAPIC::LAPICDeviceClass, lapic))
         return false;
 
-    // Determine the IOAPIC base address.
-    uint32_t ioapic_base = infos::arch::x86::acpi::acpi_get_ioapic_base();
-
-    // Create and register an IOAPIC object.
-    IOAPIC *ioapic = new IOAPIC(pa_to_vpa(ioapic_base));
-    if (!sys.device_manager().register_device(*ioapic))
+    PIT *pit;
+    if (!sys.device_manager().try_get_device_by_class(PIT::PITDeviceClass, pit))
         return false;
-
-    // Create and register a PIT (Programmable Interrupt Timer), used here for spin delay
-    PIT *pit = new PIT();
-    if (!sys.device_manager().register_device(*pit))
-        return false;
-
 
     List<Core*> _cores = sys.device_manager().cores();
 
@@ -57,6 +48,7 @@ bool infos::arch::x86::cpu_init()
         // Skip BSP and error cores
         if (core->get_state() == Core::core_state::OFFLINE) {
             // Start the core!
+            cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
             start_core(core, lapic, pit);
         }
     }
@@ -95,8 +87,9 @@ LAPIC* infos::arch::x86::register_lapic() {
 
 extern char _MPSTARTUP_START;
 extern char _MPSTARTUP_END;
-extern unsigned long mpcr3, mpstack;
+extern unsigned long mpcr3, mpstack, core_obj;
 extern unsigned char mpready;
+extern uint64_t *__template_pml4;
 
 void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     uint8_t processor_id = core->get_processor_id();
@@ -107,8 +100,7 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     memcpy(start_page, (const void *)(pa_to_vpa((uintptr_t) &_MPSTARTUP_START)), mpstartup_size);
 
     // Insert CR3 value
-    uint64_t this_cr3;
-    asm volatile("mov %%cr3, %0" : "=r"(this_cr3));
+    uint64_t this_cr3 = (uint64_t) __template_pml4;
     size_t mpcr3_offset = (uint64_t)&mpcr3 - (uint64_t)&_MPSTARTUP_START;
     *((uint64_t *)pa_to_vpa(mpcr3_offset)) = this_cr3;		// HACK: ONLY WORKS IF BASE PFN=0
 
@@ -116,6 +108,10 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     size_t mprsp_offset = (uint64_t)&mpstack - (uint64_t)&_MPSTARTUP_START;
     PageDescriptor* pgd = sys.mm().pgalloc().alloc_pages(0);
     *((uint64_t *)pa_to_vpa(mprsp_offset)) = sys.mm().pgalloc().pgd_to_kva(pgd);
+
+    // Insert pointer to core object
+    size_t core_obj_offset = (uint64_t)&core_obj - (uint64_t)&_MPSTARTUP_START;
+    *((uint64_t *)pa_to_vpa(core_obj_offset)) = (uint64_t) core;
 
     asm volatile("mfence" ::: "memory");
 
@@ -127,18 +123,24 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     // send init and wait 10ms
 //    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", processor_id);
     lapic->send_remote_init(processor_id, 0);
+    pit->lock();
     pit->spin_delay(10000000);
+    pit->unlock();
 
     // send sipi and wait 1ms
 //    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending sipi to core %u", processor_id);
     lapic->send_remote_sipi(processor_id, 0);
+    pit->lock();
     pit->spin_delay(1000000);
+    pit->unlock();
 
     if (!*ready_flag) {
         // send second sipi and wait 1s
-//        cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "resending sipi to core %u", processor_id);
+        cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "resending sipi to core %u", processor_id);
         lapic->send_remote_sipi(processor_id,0);
+        pit->lock();
         pit->spin_delay(1000000000);
+        pit->unlock();
     }
 
     if (!*ready_flag) {

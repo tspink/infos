@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <arch/x86/irq.h>
-
 namespace infos
 {
 	namespace kernel
