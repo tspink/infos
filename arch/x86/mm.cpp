@@ -13,6 +13,7 @@
 #include <arch/x86/cpuid.h>
 #include <arch/x86/irq.h>
 #include <arch/x86/context.h>
+#include <arch/x86/msr.h>
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/thread.h>
 #include <infos/kernel/process.h>
@@ -50,7 +51,8 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	}
 
 	// If there is a current thread, abort it.
-	syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p", fault_address, current_thread->context().native_context->rip);
+    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
+    syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p, core id=%u", fault_address, current_thread->context().native_context->rip, apic_id);
 	
 	// TODO: support passing page-faults into threads.
 	current_thread->owner().terminate(-1);

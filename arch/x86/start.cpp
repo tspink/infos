@@ -220,7 +220,7 @@ extern "C" __noreturn void x86_core_start(Core* core_object)
 
     // Initialise the AP's scheduler so the core has an
     // idle process and is set up to take interrupts
-    core_object->get_sched_ptr()->init();
+    core_object->get_scheduler().init();
 
     // Create and register the AP's LAPIC object.
     LAPIC *lapic = register_lapic();
@@ -248,9 +248,9 @@ extern "C" __noreturn void x86_core_start(Core* core_object)
     lapic_timer->init_periodic((lapic_timer->frequency() >> 4) / 100);
     lapic_timer->start();
 
+    core_object->set_initialised(true);
+
     for (;;) asm volatile("pause");
-
-
 }
 
 extern "C" {

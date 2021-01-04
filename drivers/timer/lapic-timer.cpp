@@ -65,7 +65,7 @@ bool LAPICTimer::calibrate()
 	lapic_timer_log.messagef(LogLevel::DEBUG, "calibration ticks=%d", (uint32_t)CALIBRATION_TICKS);
 	
 	// Initialise the LAPIC and the PIT for one-shot operation.
-    pit->lock();
+//    pit->lock();
     this->init_oneshot(0xffffffff);
 	pit->init_oneshot(CALIBRATION_TICKS);		// 10ms
 	
@@ -81,7 +81,7 @@ bool LAPICTimer::calibrate()
 
 	// Stop the PIT
 	pit->stop();
-	pit->unlock();
+//	pit->unlock();
 
 	// Calculate the number of ticks per period (accounting for the LAPIC division)
 	uint32_t ticks_per_period = (0xffffffff - count());

@@ -35,8 +35,6 @@ namespace infos
 				virtual bool expired() const = 0;
 				virtual uint64_t count() const = 0;
 				virtual uint64_t frequency() const = 0;
-
-                void spin_delay(uint64_t nanoseconds);
             };
 		}
 	}

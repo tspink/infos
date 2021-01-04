@@ -22,15 +22,15 @@ using namespace infos::util;
 
 bool infos::arch::x86::sched_init()
 {
-    List<Core*> _cores = sys.device_manager().cores();
-    for (Core *core : _cores) {
-        // Initialise the BSP's scheduler
-        if (core->get_state() == Core::core_state::BOOTSTRAP) {
-            // todo: this is messy maybe fix this
-            core->set_sched_ptr(&sys.scheduler());
-            return core->get_sched_ptr()->init();
-        }
-    }
+//    List<Core*> _cores = sys.device_manager().cores();
+//    for (Core *core : _cores) {
 
-	return false;
+//        if (core->get_state() == Core::core_state::BOOTSTRAP) {
+//            core->set_sched_ptr(&sys.scheduler());
+//            return core->get_sched_ptr()->init();
+//        }
+//    }
+
+    // Initialise the BSP's scheduler
+    return sys.scheduler().init();
 }

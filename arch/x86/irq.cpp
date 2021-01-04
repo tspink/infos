@@ -179,24 +179,20 @@ bool IRQManager::attach_irq(kernel::IRQ* irq)
 	// finding a descriptor that doesn't have an associated IRQ object.
 	for (unsigned int i = 0x20; i < 0x100; i++) {
 		if (irq_descriptors[i].irq() == NULL) {
-            // If one is found, acquire a lock and check that the descriptor hasn't
-            // been claimed by another CPU while you were acquiring the lock
+            // If one is found, acquire a lock
 //            _mtx.lock();
-//            UniqueLock<Mutex> l(_mtx);
-//            if (irq_descriptors[i].irq() != NULL) {
-//                lock->unlock();
-//                break;
-//            }
 
 // todo: please fix this, there might be a race on irq_descriptors ?!
 
-            if (irq_descriptors[i].irq() == NULL) {
+            // Check that the descriptor hasn't been claimed by
+            // another CPU while you were acquiring the lock
+//            if (irq_descriptors[i].irq() == NULL) {
                 // Connect the IRQ object to the descriptor, and assign its number.
                 irq_descriptors[i].irq(irq);
 //                _mtx.unlock();
                 irq->assign(i);
                 return true;
-            }
+//            }
 
 //            _mtx.unlock();
 		}
@@ -239,7 +235,7 @@ void ExceptionIRQ::disable()
 void SoftwareIRQ::handle() const
 {
 	// Invoke the handler function, but if it failed to invoke, halt the system.
-	if (!invoke()) {
+    if (!invoke()) {
 		x86_log.messagef(LogLevel::FATAL, "Unhandled Software IRQ %u", nr());
 		arch_abort();
 	}

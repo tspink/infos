@@ -24,7 +24,7 @@ void Mutex::lock()
 	while (__sync_lock_test_and_set(&_locked, 1)) {
 //	    infos::arch::x86::__outb(0xe9, 0x41);
 // todo: still causing issues
-//		infos::kernel::sys.arch().invoke_kernel_syscall(1);
+		infos::kernel::sys.arch().invoke_kernel_syscall(1);
 	}
 	
 	_owner = &Thread::current();

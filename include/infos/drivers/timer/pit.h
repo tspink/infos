@@ -35,10 +35,11 @@ namespace infos
                 void unlock() { _mtx.unlock(); }
 
                 uint64_t count() const override;
-
                 uint64_t frequency() const override { return 1193180; }
 
-			private:
+                void spin(uint64_t nanoseconds);
+
+            private:
 			    util::Mutex _mtx;
             };
 		}
