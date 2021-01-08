@@ -9,14 +9,14 @@ namespace infos {
 		class SyscallManager {
 		public:
 			static const int MAX_SYSCALLS = 256;
-			
+
 			typedef unsigned long (*syscallfn)(unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
 
 			SyscallManager();
-			
+
 			void RegisterSyscall(int nr, syscallfn fn);
 			unsigned long InvokeSyscall(int nr, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
-			
+
 		private:
 			syscallfn syscall_table_[MAX_SYSCALLS];
 		};
@@ -24,6 +24,7 @@ namespace infos {
 		class DefaultSyscalls {
 		public:
 			static void sys_nop();
+			static void sys_yield();
 
 			static ObjectHandle sys_open(uintptr_t filename, uint32_t flags);
 			static unsigned int sys_close(ObjectHandle h);

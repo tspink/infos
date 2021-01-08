@@ -2,10 +2,10 @@
 
 /*
  * kernel/syscall.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/kernel/syscall.h>
@@ -39,9 +39,9 @@ void SyscallManager::RegisterSyscall(int nr, syscallfn fn)
 unsigned long SyscallManager::InvokeSyscall(int nr, unsigned long arg0, unsigned long arg1, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
 {
 	if (nr < 0 || nr >= MAX_SYSCALLS) return -1;
-	
+
 	syscallfn fn = syscall_table_[nr];
-	
+
 	if (fn == nullptr) {
 		syslog.messagef(LogLevel::DEBUG, "UNHANDLED USER SYSTEM CALL: %lu", nr);
 		return -1;
@@ -53,7 +53,7 @@ unsigned long SyscallManager::InvokeSyscall(int nr, unsigned long arg0, unsigned
 void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 {
 	mgr.RegisterSyscall(0, (SyscallManager::syscallfn) DefaultSyscalls::sys_nop);
-	// mgr.RegisterSyscall(1, (SyscallManager::syscallfn) DefaultSyscalls::sys_yield);
+	mgr.RegisterSyscall(1, (SyscallManager::syscallfn) DefaultSyscalls::sys_yield);
 	mgr.RegisterSyscall(2, (SyscallManager::syscallfn) DefaultSyscalls::sys_exit);
 
 	mgr.RegisterSyscall(3, (SyscallManager::syscallfn) DefaultSyscalls::sys_open);
@@ -78,6 +78,11 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 void DefaultSyscalls::sys_nop()
 {
 
+}
+
+void DefaultSyscalls::sys_yield()
+{
+	// syslog.messagef(LogLevel::DEBUG, "YIELD");
 }
 
 // TODO: There is no userspace buffer checking done at all.  This really needs to be fixed...
@@ -265,7 +270,7 @@ struct userspace_tod_buffer {
 unsigned int DefaultSyscalls::sys_get_tod(uintptr_t tpstruct)
 {
 	auto& tod = sys.time_of_day();
-	
+
 	userspace_tod_buffer *userspace_tod = (userspace_tod_buffer *)tpstruct;
 	userspace_tod->day_of_month = tod.day;
 	userspace_tod->hours = tod.hours;
@@ -273,6 +278,6 @@ unsigned int DefaultSyscalls::sys_get_tod(uintptr_t tpstruct)
 	userspace_tod->month = tod.month;
 	userspace_tod->seconds = tod.seconds;
 	userspace_tod->year = tod.year;
-	
+
 	return 0;
 }

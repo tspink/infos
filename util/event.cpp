@@ -2,10 +2,10 @@
 
 /*
  * util/event.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/util/event.h>
@@ -18,17 +18,10 @@ using namespace infos::util;
 
 void Event::trigger()
 {
-	_triggered = 1;
+	_wakequeue.wake();
 }
 
 void Event::wait()
 {
-	while (!_triggered) {
-		asm volatile("pause");
-	}
-}
-
-void Event::reset()
-{
-	_triggered = 0;
+	_wakequeue.sleep(Thread::current());
 }
