@@ -39,7 +39,7 @@ This should boot InfOS in QEMU, starting the example user-space.
 
 Since this project was created for a course at the University of Edinburgh,
 it is /moderately/ bespoke, although it is technically a general purpose
-operating system.  If you are interested in the coursework, you can take a
-look at the course webpage, and download the coursework specification:
+operating system.  If you are interested in the coursework, get in touch
+and I can supply the documentation!
 
-https://www.inf.ed.ac.uk/teaching/courses/os/coursework/coursework.pdf
+tspink@inf.ed.ac.uk
