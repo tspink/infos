@@ -64,7 +64,7 @@ namespace infos
 			ThreadPrivilege::ThreadPrivilege _privilege;
 			thread_proc_t _entry_point;
 			unsigned int _current_entry_argument;
-			
+
 			ThreadContext _context;
 		};
 	}

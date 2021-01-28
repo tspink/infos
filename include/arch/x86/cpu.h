@@ -28,7 +28,6 @@ namespace infos
 				X86CPU();
 			};
 
-            infos::drivers::irq::LAPIC* register_lapic();
             void start_core(infos::drivers::irq::Core* core, infos::drivers::irq::LAPIC* lapic, infos::drivers::timer::PIT* pit);
 
             extern kernel::ComponentLog cpu_log;

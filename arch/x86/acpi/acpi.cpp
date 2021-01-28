@@ -166,9 +166,10 @@ static bool parse_madt_lapic(const MADTRecordLAPIC *lapic)
     // Check if the core's APIC ID matches the BSP's APIC ID
     else if (lapic->apic_id == __bsp_apic_id) state = Core::core_state::BOOTSTRAP;
 
-    // Create core object and register with device manager
+    // Create core object, register with device manager, add to array of cores
     Core *core = new Core(lapic->acpi_processor_id, lapic->apic_id, state);
     infos::kernel::sys.device_manager().register_device(*core);
+    Core::add_core(core);
 
     return true;
 }

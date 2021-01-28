@@ -22,15 +22,6 @@ using namespace infos::util;
 
 bool infos::arch::x86::sched_init()
 {
-//    List<Core*> _cores = sys.device_manager().cores();
-//    for (Core *core : _cores) {
-
-//        if (core->get_state() == Core::core_state::BOOTSTRAP) {
-//            core->set_sched_ptr(&sys.scheduler());
-//            return core->get_sched_ptr()->init();
-//        }
-//    }
-
     // Initialise the BSP's scheduler
-    return sys.scheduler().init();
+    return Core::get_current_core()->sched_init();
 }

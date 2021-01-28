@@ -27,6 +27,7 @@ using namespace infos::arch;
 using namespace infos::util;
 using namespace infos::fs;
 using namespace infos::drivers;
+using namespace infos::drivers::irq;
 
 static char boot_device_name[16];
 static char boot_fstype[16];
@@ -67,14 +68,14 @@ void Kernel::start(BottomFn bottom)
 	
 	initialise_tod();
 	
-	_kernel_process = new Process("kernel", true, (Thread::thread_proc_t) &start_kernel_threadproc_tramp);
+	_kernel_process = new Process(Core::get_current_core()->get_scheduler(), "kernel", true, (Thread::thread_proc_t) &start_kernel_threadproc_tramp);
 	
 	_kernel_process->main_thread().add_entry_argument((void *) this);
 	_kernel_process->main_thread().add_entry_argument((void *)bottom);
 	_kernel_process->start();
 		
 	syslog.messagef(LogLevel::DEBUG, "Running scheduler");
-	scheduler().run();
+	Core::get_current_core()->get_scheduler().run();
 }
 
 void Kernel::start_kernel_threadproc_tramp(Kernel* kernel, BottomFn bottom)

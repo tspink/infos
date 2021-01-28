@@ -52,9 +52,14 @@ static void idle_task()
 bool Scheduler::init()
 {
 	sched_log.message(LogLevel::INFO, "Creating idle process");
+    // todo: something goes amiss here sometimes, and the bsp stops doing what it's supposed to be doing
+    // perhaps the bsp accidentally stats running idle task?
+	Process *idle_process = new Process(*this, "idle", true, (Thread::thread_proc_t)idle_task);
 
-	Process *idle_process = new Process("idle", true, (Thread::thread_proc_t)idle_task);
-	_idle_entity = &idle_process->main_thread();
+    sched_log.message(LogLevel::INFO, "Idle process created");
+
+
+    _idle_entity = &idle_process->main_thread();
 	
 	SchedulingAlgorithm *algo = acquire_scheduler_algorithm();
 	if (!algo) {
@@ -197,6 +202,8 @@ void Scheduler::set_entity_state(SchedulingEntity& entity, SchedulingEntityState
 	entity._state = state;
 	entity._state_changed.trigger();
 }
+
+void Scheduler::set_current_thread(Thread &thread) { _current_thread = &thread; }
 
 extern char _SCHED_ALG_PTR_START, _SCHED_ALG_PTR_END;
 

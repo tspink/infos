@@ -11,6 +11,7 @@
 #include <infos/drivers/timer/lapic-timer.h>
 #include <infos/drivers/timer/pit.h>
 #include <infos/drivers/irq/lapic.h>
+#include <infos/drivers/irq/core.h>
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/irq.h>
 #include <infos/kernel/log.h>
@@ -180,6 +181,7 @@ uint64_t LAPICTimer::count() const
 bool LAPICTimer::expired() const
 {
 	// TODO: Implement
+//	return _lapic->get_timer_current_count() == 0;
 	return false;
 }
 
@@ -192,7 +194,8 @@ void LAPICTimer::lapic_timer_irq_handler(const IRQ *irq, void* priv)
 {
 	// HACK HACK HACK -- this shouldn't be hard-coded in
 	// todo: this seems like it might cause a problem...
+	Scheduler& sched = Core::get_current_core()->get_scheduler();
 	sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(10)));		// Tell the kernel to update its internal runtime with +10mS
-	sys.scheduler().update_accounting();		// Tell the scheduler to update process accounting
-	sys.scheduler().schedule();					// Cause a scheduling event to occur
+	sched.update_accounting();		// Tell the scheduler to update process accounting
+	sched.schedule();					// Cause a scheduling event to occur
 }

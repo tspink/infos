@@ -18,6 +18,7 @@
 #include <infos/kernel/thread.h>
 #include <infos/kernel/process.h>
 #include <infos/kernel/log.h>
+#include <infos/drivers/irq/core.h>
 #include <infos/mm/mm.h>
 #include <infos/mm/page-allocator.h>
 #include <infos/util/string.h>
@@ -25,6 +26,7 @@
 #include <arch/x86/x86-arch.h>
 
 using namespace infos::arch::x86;
+using namespace infos::drivers::irq;
 using namespace infos::kernel;
 using namespace infos::mm;
 using namespace infos::util;
@@ -41,8 +43,12 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	// Retrieve the fault_address from the cr2 control register.
 	uint64_t fault_address;
 	asm volatile("mov %%cr2, %0" : "=r"(fault_address));
-	
-	if (current_thread == NULL) {
+
+//	Scheduler sched = Core::get_current_core()->get_scheduler();
+//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
+
+
+    if (current_thread == NULL) {
 		// If there is no current_thread, then this page fault happened REALLY
 		// early.  We must abort.
 		syslog.messagef(LogLevel::FATAL, "*** PAGE FAULT @ vaddr=%p", fault_address);
@@ -51,8 +57,8 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	}
 
 	// If there is a current thread, abort it.
-    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-    syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p, core id=%u", fault_address, current_thread->context().native_context->rip, apic_id);
+//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
+    syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p, core id=", fault_address, current_thread->context().native_context->rip);
 	
 	// TODO: support passing page-faults into threads.
 	current_thread->owner().terminate(-1);

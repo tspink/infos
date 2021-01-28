@@ -174,31 +174,23 @@ bool IRQManager::attach_irq(kernel::IRQ* irq)
 {
 	// The caller MUST supply an IRQ object.
 	if (!irq) return false;
+	
+//	_mtx.lock();
 
 	// Starting at 32, and onwards, try to find a free IRQ vector by
 	// finding a descriptor that doesn't have an associated IRQ object.
 	for (unsigned int i = 0x20; i < 0x100; i++) {
 		if (irq_descriptors[i].irq() == NULL) {
-            // If one is found, acquire a lock
-//            _mtx.lock();
-
-// todo: please fix this, there might be a race on irq_descriptors ?!
-
-            // Check that the descriptor hasn't been claimed by
-            // another CPU while you were acquiring the lock
-//            if (irq_descriptors[i].irq() == NULL) {
-                // Connect the IRQ object to the descriptor, and assign its number.
-                irq_descriptors[i].irq(irq);
-//                _mtx.unlock();
-                irq->assign(i);
-                return true;
-//            }
-
+            // Connect the IRQ object to the descriptor, and assign its number.
+            irq_descriptors[i].irq(irq);
+            irq->assign(i);
 //            _mtx.unlock();
-		}
-	}
-	
-	return false;
+            return true;
+        }
+    }
+
+//    _mtx.unlock();
+    return false;
 }
 
 /**

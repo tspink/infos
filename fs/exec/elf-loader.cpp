@@ -11,12 +11,14 @@
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/process.h>
 #include <infos/mm/mm.h>
+#include <infos/drivers/irq/core.h>
 #include <infos/mm/page-allocator.h>
 
 using namespace infos::kernel;
 using namespace infos::fs;
 using namespace infos::fs::exec;
 using namespace infos::util;
+using namespace infos::drivers::irq;
 
 ComponentLog infos::fs::exec::elf_log(syslog, "elf");
 
@@ -108,7 +110,7 @@ Process* ElfLoader::load(const String& cmdline)
 		return NULL;
 	}
 	
-	Process *np = new Process("unknown", false, (Thread::thread_proc_t)hdr.entry_point);
+	Process *np = new Process(Core::get_current_core()->get_scheduler(), "unknown", false, (Thread::thread_proc_t)hdr.entry_point);
 	for (unsigned int i = 0; i < hdr.phnum; i++) {
 		ELF64ProgramHeaderEntry ent;
 		

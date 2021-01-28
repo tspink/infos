@@ -51,15 +51,3 @@ bool DeviceManager::add_device_alias(const util::String& name, drivers::Device& 
 	
 	return true;
 }
-
-List<Core *> DeviceManager::cores() {
-    List<Core *> __cores;
-
-    for (auto device : DeviceManager::devices()) {
-        if (device.value->device_class().is(Core::CoreDeviceClass)) {
-            __cores.append((Core*) device.value);
-        }
-    }
-
-    return __cores;
-}

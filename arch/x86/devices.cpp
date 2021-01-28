@@ -60,33 +60,16 @@ using namespace infos::util;
  */
 bool infos::arch::x86::timer_init()
 {
-	// Read the CPU feature set.
-	CPUIDFeatures::CPUIDFeatures features = cpuid_get_features();
-	
-	// The timer requires the APIC, so check that it is present.
-	if (!(features.rdx & CPUIDFeatures::APIC)) {
-		syslog.message(LogLevel::ERROR, "APIC not present");
-		return false;
-	}
-
-    // Determine the LAPIC base address.
+    // Determine the LAPIC and IOAPIC base address.
     uint64_t lapic_base = __rdmsr(MSR_APIC_BASE) & ~0xfff;
-    if (!lapic_base) {
-        syslog.message(LogLevel::ERROR, "Invalid LAPIC base address");
-        return false;
-    }
-
-    // Determine the IOAPIC base address.
     uint32_t ioapic_base = infos::arch::x86::acpi::acpi_get_ioapic_base();
 
     // Print out some information about the memory-mapped location of these
     // structures.
     syslog.messagef(LogLevel::DEBUG, "LAPIC base=%lx, IOAPIC base=%lx", lapic_base, ioapic_base);
 
-    // Create and register the BSP's LAPIC object.
-    LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
-    if (!sys.device_manager().register_device(*lapic))
-        return false;
+    Core* bsp = Core::get_current_core();
+    bsp->lapic_init();
 
     // Create and register an IOAPIC object.
     IOAPIC *ioapic = new IOAPIC(pa_to_vpa(ioapic_base));
@@ -100,19 +83,7 @@ bool infos::arch::x86::timer_init()
     if (!sys.device_manager().register_device(*pit))
         return false;
 
-    // Finally, create and register the BSP's LAPIC timer. The LAPIC timer will
-    // calibrate itself as part of its initialisation, and so the PIT
-    // must be registered beforehand.
-    LAPICTimer *lapic_timer = new LAPICTimer();
-    lapic_timer->set_lapic_ptr(lapic);
-    if (!sys.device_manager().register_device(*lapic_timer))
-        return false;
-
-	// Set the timer to be periodic, with a period of 10ms, and start
-	// the timer.
-	lapic_timer->init_periodic((lapic_timer->frequency() >> 4) / 100);
-	lapic_timer->start();
-	
+    bsp->timer_init();
 	return true;
 }
 

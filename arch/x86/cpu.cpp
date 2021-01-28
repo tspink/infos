@@ -42,10 +42,15 @@ bool infos::arch::x86::cpu_init()
     if (!sys.device_manager().try_get_device_by_class(PIT::PITDeviceClass, pit))
         return false;
 
-    List<Core*> _cores = sys.device_manager().cores();
+    Core** cores = Core::get_cores();
 
-    for (Core *core : _cores) {
-        // Skip BSP and error cores
+    // Messy hack: we don't know the number of cores before the static cores array is created,
+    // so we declare size 32 (max number of cores supported) and initialise all as nullptrs
+    // then reassign indices of cores that exist with core objects
+    for (int i = 0; i < 32; i++) {
+        Core* core = *(cores+i);
+        if (core == nullptr) continue; // reached end of core array
+
         if (core->get_state() == Core::core_state::OFFLINE) {
             // Start the core!
             cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
@@ -58,31 +63,6 @@ bool infos::arch::x86::cpu_init()
     mm_remove_multicore_mapping();
 
     return true;
-}
-
-/**
- * Registers the LAPIC of the currently executing core with the device manager.
- * @return Returns TRUE if the LAPIC was successfully registered with the device manager, or FALSE otherwise.
- */
-LAPIC* infos::arch::x86::register_lapic() {
-    // LAPIC base is the same for every LAPIC in the system, you can
-    // only access the registers of the LAPIC of the currently executing core
-    uint64_t lapic_base = __rdmsr(MSR_APIC_BASE) & ~0xfff;
-
-    if (!lapic_base) {
-        cpu_log.messagef(LogLevel::ERROR, "Invalid LAPIC base address %x", lapic_base);
-        return NULL;
-    }
-
-    // Create the CPU's LAPIC object and register with the device manager
-    LAPIC *lapic = new LAPIC(pa_to_vpa(lapic_base));
-
-    if (!sys.device_manager().register_device(*lapic)) {
-        cpu_log.message(LogLevel::ERROR, "LAPIC not registered with device manager");
-        return NULL;
-    }
-
-    return lapic;
 }
 
 extern char _MPSTARTUP_START;
@@ -123,35 +103,36 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
     // send init and wait 10ms
 //    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending init to core %u", processor_id);
     lapic->send_remote_init(processor_id, 0);
-//    pit->lock();
     pit->spin(10000000);
-//    pit->unlock();
 
     // send sipi and wait 1ms
 //    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "sending sipi to core %u", processor_id);
     lapic->send_remote_sipi(processor_id, 0);
-//    pit->lock();
     pit->spin(1000000);
-//    pit->unlock();
 
     if (!*ready_flag) {
         // send second sipi and wait 1s
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "resending sipi to core %u", processor_id);
         lapic->send_remote_sipi(processor_id,0);
-//        pit->lock();
         pit->spin(1000000000);
-//        pit->unlock();
     }
 
     if (!*ready_flag) {
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u error, skipping", processor_id);
     } else {
         core->set_state(Core::core_state::ONLINE);
+        *ready_flag = 2;
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u ready", processor_id);
     }
 
+    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "waiting for core %u to be ready", processor_id);
+
     // wait for core to finish setup before moving on
-    while(!core->is_initialised());
+    while(!core->is_initialised()) {
+        asm volatile ("nop");
+    }
+
+    cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u ready, moving on", processor_id);
 }
 
 /**

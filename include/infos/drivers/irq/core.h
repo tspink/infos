@@ -4,6 +4,7 @@
 #include <infos/kernel/irq.h>
 #include <infos/kernel/sched.h>
 #include <infos/drivers/irq/lapic.h>
+#include <infos/util/map.h>
 
 namespace infos {
     namespace drivers {
@@ -30,18 +31,24 @@ namespace infos {
                 bool is_initialised();
                 void set_initialised(bool initialised);
 
-                void set_state(core_state state);
-                void set_lapic_ptr(LAPIC *lapic);
+                bool sched_init();
+                bool lapic_init();
+                bool timer_init();
 
-                //todo: have a private runqueue!
+                void set_state(core_state state);
+
+                static void add_core(Core* new_core);
+                static Core* get_current_core();
+                static Core** get_cores();
 
             private:
                 uint8_t processor_id;
                 uint8_t lapic_id;
                 core_state state;
-                LAPIC *lapic_ptr;
+                LAPIC *lapic;
                 kernel::Scheduler scheduler;
                 volatile bool initialised;
+                static Core* cores[32];
             };
         }
     }

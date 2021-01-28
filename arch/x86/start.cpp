@@ -18,12 +18,12 @@
 #include <arch/x86/acpi/acpi.h>
 #include <arch/x86/cpu.h>
 #include <arch/x86/msr.h>
+#include <arch/x86/cpuid.h>
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
 #include <infos/util/string.h>
 #include <infos/util/map.h>
 #include <infos/util/printf.h>
-#include <arch/x86/cpuid.h>
 #include <infos/drivers/timer/lapic-timer.h>
 
 using namespace infos::arch::x86;
@@ -146,8 +146,8 @@ extern "C" void __noreturn x86_init_top()
 		(const char *)(pa_to_kva((uint64_t)multiboot_info_structure->cmdline)));	
 		
 	sys.early_init((const char *)(pa_to_kva((uint64_t)multiboot_info_structure->cmdline)));
-	
-	x86_log.message(LogLevel::DEBUG, "Initialising platform");
+
+    x86_log.message(LogLevel::DEBUG, "Initialising platform");
 	if (!x86arch.init()) {
 		syslog.message(LogLevel::ERROR, "Unable to initialise the platform");
 		goto init_error;
@@ -213,42 +213,21 @@ extern "C" __noreturn void x86_core_start(Core* core_object)
     // NOTE: MUST BE IN THE ORDER
     // BSP SCHED INIT, BSP TIMER INIT,
     // AP SCHED INIT, AP TIMER INIT
-    // Because the scheudler starts an idle process later used during timer init
+    // Because the scheduler starts an idle process later used during timer init
     // when we come to use mutex locks and call the yield syscall
 
-    syslog.messagef(LogLevel::DEBUG, "Hello world from core %u!", core_object->get_lapic_id());
+    syslog.messagef(LogLevel::DEBUG, "Hello world from core %u", core_object->get_lapic_id());
 
     // Initialise the AP's scheduler so the core has an
     // idle process and is set up to take interrupts
-    core_object->get_scheduler().init();
+    core_object->sched_init();
 
-    // Create and register the AP's LAPIC object.
-    LAPIC *lapic = register_lapic();
-    core_object->set_lapic_ptr(lapic);
-
-    // Read the CPU feature set.
-    CPUIDFeatures::CPUIDFeatures features = cpuid_get_features();
-
-    // The timer requires the APIC, so check that it is present.
-    if (!(features.rdx & CPUIDFeatures::APIC)) {
-        syslog.message(LogLevel::ERROR, "APIC not present");
-    }
-
-    // Create and register the LAPIC timer. When calibrating, the LAPIC uses the PIT as a
-    // reference timer. The PIT is registered in cpu_init and presence is checked during
-    // LAPIC init before the LAPIC begins to calibrate.
-    infos::drivers::timer::LAPICTimer *lapic_timer = new infos::drivers::timer::LAPICTimer();
-    lapic_timer->set_lapic_ptr(lapic);
-
-    if (!sys.device_manager().register_device(*lapic_timer))
-        syslog.message(LogLevel::ERROR, "LAPIC Timer failed to initialise");
-
-    // Set the timer to be periodic, with a period of 10ms, and start
-    // the timer.
-    lapic_timer->init_periodic((lapic_timer->frequency() >> 4) / 100);
-    lapic_timer->start();
+    // Create and register the AP's LAPIC and LAPICTimer objects.
+    core_object->lapic_init();
+    core_object->timer_init();
 
     core_object->set_initialised(true);
+    syslog.messagef(LogLevel::DEBUG, "Set core %u state to true!", core_object->get_lapic_id());
 
     for (;;) asm volatile("pause");
 }

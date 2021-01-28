@@ -23,7 +23,7 @@ namespace infos
 		class Process
 		{
 		public:
-			Process(const util::String& name, bool kernel_process, Thread::thread_proc_t entry_point);
+			Process(Scheduler& scheduler, const util::String& name, bool kernel_process, Thread::thread_proc_t entry_point);
 			virtual ~Process();
 			
 			const util::String& name() const { return _name; }
@@ -38,10 +38,12 @@ namespace infos
 			Thread& main_thread() const { return *_main_thread; }
 			
 			Thread& create_thread(ThreadPrivilege::ThreadPrivilege privilege, Thread::thread_proc_t entry_point);
-			
+			Scheduler& get_scheduler() { return _scheduler; }
+
 			util::Event& state_changed() { return _state_changed; }
 			
 		private:
+		    Scheduler& _scheduler;
 			const util::String _name;
 			bool _kernel_process, _terminated;
 			mm::VMA _vma;

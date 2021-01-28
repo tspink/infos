@@ -10,6 +10,7 @@
  */
 #include <arch/x86/init.h>
 #include <arch/x86/context.h>
+#include <arch/x86/msr.h>
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/sched.h>
 #include <infos/kernel/thread.h>
@@ -17,12 +18,15 @@
 #include <infos/kernel/log.h>
 #include <infos/kernel/syscall.h>
 #include <infos/kernel/object.h>
+#include <infos/drivers/irq/core.h>
 #include <infos/fs/vfs.h>
 #include <infos/fs/file.h>
 #include <arch/arch.h>
 
 using namespace infos::kernel;
 using namespace infos::fs;
+using namespace infos::arch::x86;
+using namespace infos::drivers::irq;
 
 /**
  * Handle a system call that came from user-space.
@@ -45,16 +49,17 @@ void user_syscall_handler(const IRQ *irq, void *priv)
  */
 void kernel_syscall_handler(const IRQ *irq, void *priv)
 {
-	//syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);*/
+//	syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);*/
 
 	int syscall = Thread::current().context().native_context->rax;
 	switch (syscall) {
 	case 1:
-		sys.scheduler().schedule();
+		Core::get_current_core()->get_scheduler().schedule();
 		break;
 
 	default:
-		syslog.messagef(LogLevel::DEBUG, "UNHANDLED SYSTEM CALL %lu", syscall);
+        uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
+        syslog.messagef(LogLevel::DEBUG, "UNHANDLED SYSTEM CALL %lu from core %u, rip=%p", syscall, apic_id, Thread::current().context().native_context->rip);
 		break;
 	}
 }

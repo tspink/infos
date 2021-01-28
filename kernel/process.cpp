@@ -12,8 +12,8 @@
 
 using namespace infos::kernel;
 
-Process::Process(const util::String& name, bool kernel_process, Thread::thread_proc_t entry_point) 
-	: _name(name), _kernel_process(kernel_process), _terminated(false), _vma()
+Process::Process(Scheduler& scheduler, const util::String& name, bool kernel_process, Thread::thread_proc_t entry_point)
+	: _scheduler(scheduler), _name(name), _kernel_process(kernel_process), _terminated(false), _vma()
 {
 	// Initialise the VMA by installing the default kernel mapping.
 	_vma.install_default_kernel_mapping();

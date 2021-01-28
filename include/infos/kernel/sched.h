@@ -37,6 +37,9 @@ namespace infos
 		{
 		public:
 			Scheduler(Kernel& owner);
+
+            Scheduler(Scheduler&&) = delete;
+            Scheduler(const Scheduler&) = delete;
 			
 			bool init();
 			
@@ -48,8 +51,10 @@ namespace infos
 			void schedule();
 			
 			void set_entity_state(SchedulingEntity& entity, SchedulingEntityState::SchedulingEntityState state);
+            void set_current_thread(Thread& thread);
 
 			SchedulingEntity& current_entity() const { return *_current; }
+			Thread* current_thread() const { return _current_thread; }
 			
 			void update_accounting();
 			
@@ -60,6 +65,7 @@ namespace infos
 			SchedulingAlgorithm *_algorithm;
 			SchedulingEntity *_current;
 			SchedulingEntity *_idle_entity;
+            Thread *_current_thread;
 		};
 		
 		extern ComponentLog sched_log;
