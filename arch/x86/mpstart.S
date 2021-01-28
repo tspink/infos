@@ -180,12 +180,12 @@ __mpstart64:
     // back to the BSP, by setting the 'mpready' flag to one.
     mov $mpready, %eax
     sub $_MPSTARTUP_START, %eax
-    movb $1, (%eax)
+    movb $1, (%rax)
 
     // Now wait for mpready to be 2
-label:
-        cmpb $2, (%rax)
-        jne label
+1:
+    cmpb $2, (%rax)
+    jne 1b
 
     jmp x86_core_start
 .size __mpstart64,.-__mpstart64

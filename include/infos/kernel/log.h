@@ -64,7 +64,7 @@ namespace infos
 		private:
 			bool _colour;
 			io::Stream *_stream;
-			util::Mutex _mtx;
+			util::Spinlock _spnlck;
 		};
 		
 		class ComponentLog : public Log

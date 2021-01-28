@@ -62,22 +62,22 @@ X86Arch::X86Arch()
 
 bool X86Arch::init()
 {
-	if (!gdt.init()) {
-		return false;
-	}
-	
-	if (!idt.init()) {
-		return false;
-	}
-	
-	if (!tss.init(0x28)) {
-		return false;
-	}
+//	if (!gdt.init()) {
+//		return false;
+//	}
+//
+//	if (!idt.init()) {
+//		return false;
+//	}
+//
+//	if (!tss.init(0x28)) {
+//		return false;
+//	}
 
 	uint64_t rsp;
 	asm volatile("mov %%rsp, %0" : "=r"(rsp));
 
-	x86_log.messagef(LogLevel::DEBUG, "GDTR = %p, IDTR = %p, TR = %p, RSP = %p", gdt.get_ptr(), idt.get_ptr(), tss.get_sel(), rsp);
+//	x86_log.messagef(LogLevel::DEBUG, "GDTR = %p, IDTR = %p, TR = %p, RSP = %p", gdt.get_ptr(), idt.get_ptr(), tss.get_sel(), rsp);
 	
 	__wrmsr(MSR_STAR, 0x18000800000000ULL);				// CS Bases for User-Mode/Kernel-Mode
 	__wrmsr(MSR_LSTAR, (uint64_t)__syscall_trap);		// RIP for syscall entry
@@ -170,13 +170,13 @@ infos::kernel::Thread& X86Arch::get_current_thread() const
 void X86Arch::set_current_thread(kernel::Thread& thread)
 {
 	asm volatile("mov %0, %%cr3" :: "r"(thread.owner().vma().pgt_base()) : "memory");
-	tss.set_kernel_stack(thread.context().kernel_stack);
+//	Core::get_current_core()->tss().set_kernel_stack(thread.context().kernel_stack);
 
 //    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
 //    current_thread[apic_id] = &thread;
 
 //    Core::get_current_core()->get_scheduler().set_current_thread(thread);
-
+    Core::get_current_core()->tss().set_kernel_stack(thread.context().kernel_stack);
     current_thread = &thread;
 }
 

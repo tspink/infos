@@ -223,21 +223,16 @@ namespace infos
 				uint16_t length;
 				const void *ptr;
 			} __packed;
-			
-			class DT {
-			public:
-				virtual bool init() = 0;
-				virtual bool reload() = 0;
-				virtual uintptr_t get_ptr() = 0;
-			};
-			
+
 #define MAX_NR_GDT_ENTRIES	16
-			
-			class GDT : public DT {
+
+            class TSS;
+
+			class GDT {
 			public:
-				bool init() override;
-				bool reload() override;
-				uintptr_t get_ptr() override;
+				bool init(TSS* tss);
+				bool reload();
+				uintptr_t get_ptr();
 
 				void erase();
 				
@@ -253,11 +248,11 @@ namespace infos
 
 #define MAX_NR_IDT_ENTRIES	256
 
-			class IDT : public DT {
+			class IDT {
 			public:
-				bool init() override;
-				bool reload() override;
-				uintptr_t get_ptr() override;
+				bool init();
+				bool reload();
+				uintptr_t get_ptr();
 				
 				bool register_interrupt_gate(int index, uintptr_t addr, uint16_t seg, uint8_t dpl);
 				bool register_trap_gate(int index, uintptr_t addr, uint16_t seg, uint8_t dpl);
@@ -280,9 +275,9 @@ namespace infos
 				uint64_t __tss[26];				
 			};
 			
-			extern GDT gdt;
+//			extern GDT gdt;
 			extern IDT idt;
-			extern TSS tss;
+//			extern TSS tss;
 		}
 	}
 }

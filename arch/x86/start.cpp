@@ -207,8 +207,8 @@ init_error:
 
 extern "C" __noreturn void x86_core_start(Core* core_object)
 {
-    gdt.reload();
-    idt.reload();
+//    gdt.reload();
+    core_object->init_dts();
 
     // NOTE: MUST BE IN THE ORDER
     // BSP SCHED INIT, BSP TIMER INIT,
@@ -216,7 +216,7 @@ extern "C" __noreturn void x86_core_start(Core* core_object)
     // Because the scheduler starts an idle process later used during timer init
     // when we come to use mutex locks and call the yield syscall
 
-    syslog.messagef(LogLevel::DEBUG, "Hello world from core %u", core_object->get_lapic_id());
+//    syslog.messagef(LogLevel::DEBUG, "Hello world from core %u", core_object->get_lapic_id());
 
     // Initialise the AP's scheduler so the core has an
     // idle process and is set up to take interrupts

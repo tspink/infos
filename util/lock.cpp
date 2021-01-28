@@ -40,6 +40,22 @@ bool Mutex::locked_by_me()
 	return locked() && _owner == &Thread::current();
 }
 
+void Spinlock::lock()
+{
+    while (__sync_lock_test_and_set(&_locked, 1));
+    _owner = &Thread::current();
+}
+
+void Spinlock::unlock()
+{
+    __sync_lock_release(&_locked);
+}
+
+bool Spinlock::locked_by_me()
+{
+    return locked() && _owner == &Thread::current();
+}
+
 void ConditionVariable::wait(Mutex& mtx)
 {
 	assert(mtx.locked_by_me());

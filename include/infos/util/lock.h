@@ -52,6 +52,25 @@ namespace infos
 			volatile unsigned long _locked;
 			kernel::Thread *_owner;
 		};
+
+        class Spinlock : public Lock
+        {
+        public:
+            Spinlock() : _locked(0) { }
+
+            void lock() override;
+            void unlock() override;
+
+            bool locked() { return !!_locked; }
+            bool locked_by_me();
+
+        private:
+            Spinlock(const Spinlock& c);
+            Spinlock(const Spinlock&& c);
+
+            volatile unsigned long _locked;
+            kernel::Thread *_owner;
+        };
 		
 		class ConditionVariable
 		{

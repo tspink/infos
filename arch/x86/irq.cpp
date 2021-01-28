@@ -175,7 +175,7 @@ bool IRQManager::attach_irq(kernel::IRQ* irq)
 	// The caller MUST supply an IRQ object.
 	if (!irq) return false;
 	
-//	_mtx.lock();
+//	_spnlck.lock();
 
 	// Starting at 32, and onwards, try to find a free IRQ vector by
 	// finding a descriptor that doesn't have an associated IRQ object.
@@ -184,12 +184,12 @@ bool IRQManager::attach_irq(kernel::IRQ* irq)
             // Connect the IRQ object to the descriptor, and assign its number.
             irq_descriptors[i].irq(irq);
             irq->assign(i);
-//            _mtx.unlock();
+//            _spnlck.unlock();
             return true;
         }
     }
 
-//    _mtx.unlock();
+//    _spnlck.unlock();
     return false;
 }
 

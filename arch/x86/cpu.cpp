@@ -28,6 +28,14 @@ using namespace infos::drivers::irq;
 // CPU Logging Component
 infos::kernel::ComponentLog infos::arch::x86::cpu_log(infos::kernel::syslog, "cpu");
 
+static bool init_smp;
+
+RegisterCmdLineArgument(SMP, "smp") {
+    if (strncmp("yes", value, 3) == 0) {
+        init_smp = true;
+    }
+}
+
 /**
  * Initialises the CPU.
  * @return Returns TRUE if the CPU was successfully initialised, or FALSE otherwise.
@@ -42,25 +50,39 @@ bool infos::arch::x86::cpu_init()
     if (!sys.device_manager().try_get_device_by_class(PIT::PITDeviceClass, pit))
         return false;
 
-    Core** cores = Core::get_cores();
+
 
     // Messy hack: we don't know the number of cores before the static cores array is created,
     // so we declare size 32 (max number of cores supported) and initialise all as nullptrs
     // then reassign indices of cores that exist with core objects
-    for (int i = 0; i < 32; i++) {
-        Core* core = *(cores+i);
-        if (core == nullptr) continue; // reached end of core array
+    if (init_smp) {
+        List<Core*> cores = sys.device_manager().cores();
 
-        if (core->get_state() == Core::core_state::OFFLINE) {
-            // Start the core!
-            cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
-            start_core(core, lapic, pit);
+        for (Core* core : cores) {
+            if (core->get_state() == Core::core_state::OFFLINE) {
+                // Start the core!
+                cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
+                start_core(core, lapic, pit);
+            }
         }
-    }
 
-    // Once all cores have been initialised, remove the zero
-    // page mapping used for AP trampoline code
-    mm_remove_multicore_mapping();
+//        Core** cores = Core::get_cores();
+//
+//        for (int i = 0; i < 32; i++) {
+//            Core* core = *(cores+i);
+//            if (core == nullptr) continue; // reached end of core array
+//
+//            if (core->get_state() == Core::core_state::OFFLINE) {
+//                // Start the core!
+//                cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
+//                start_core(core, lapic, pit);
+//            }
+//        }
+
+        // Once all cores have been initialised, remove the zero
+        // page mapping used for AP trampoline code
+        mm_remove_multicore_mapping();
+    }
 
     return true;
 }
@@ -86,8 +108,8 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
 
     // Insert RSP value
     size_t mprsp_offset = (uint64_t)&mpstack - (uint64_t)&_MPSTARTUP_START;
-    PageDescriptor* pgd = sys.mm().pgalloc().alloc_pages(0);
-    *((uint64_t *)pa_to_vpa(mprsp_offset)) = sys.mm().pgalloc().pgd_to_kva(pgd);
+    PageDescriptor* pgd = sys.mm().pgalloc().alloc_pages(1);
+    *((uint64_t *)pa_to_vpa(mprsp_offset)) = (sys.mm().pgalloc().pgd_to_kva(pgd) + 0x2000);
 
     // Insert pointer to core object
     size_t core_obj_offset = (uint64_t)&core_obj - (uint64_t)&_MPSTARTUP_START;
@@ -119,6 +141,7 @@ void infos::arch::x86::start_core(Core* core, LAPIC* lapic, PIT* pit) {
 
     if (!*ready_flag) {
         cpu_log.messagef(infos::kernel::LogLevel::DEBUG, "core %u error, skipping", processor_id);
+        return;
     } else {
         core->set_state(Core::core_state::ONLINE);
         *ready_flag = 2;

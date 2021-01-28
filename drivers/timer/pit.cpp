@@ -24,7 +24,7 @@ PIT::PIT()
 
 void PIT::start()
 {
-//	_mtx.lock();
+//	_spnlck.lock();
 	uint8_t data = __inb(0x61);
 	
 	data &= 0xfe;
@@ -35,12 +35,12 @@ void PIT::start()
 
 void PIT::stop()
 {
-//	_mtx.unlock();
+//	_spnlck.unlock();
 }
 
 void PIT::reset()
 {
-//    _mtx.unlock();
+//    _spnlck.unlock();
 
 }
 

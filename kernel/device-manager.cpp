@@ -31,9 +31,9 @@ bool DeviceManager::register_device(drivers::Device& device)
 	device.assign_name(String(device.device_class().name) + ToString(instance));
     dm_log.messagef(LogLevel::DEBUG, "registering device '%s'", device.name().c_str());
 
-//    _mtx.lock();
+//    _spnlck.lock();
     _devices.add(device.name().get_hash(), &device);
-//    _mtx.unlock();
+//    _spnlck.unlock();
 
     if (!device.init(*this)) {
 		dm_log.messagef(LogLevel::ERROR, "device '%s' failed to initialise", device.name().c_str());
@@ -50,4 +50,16 @@ bool DeviceManager::add_device_alias(const util::String& name, drivers::Device& 
 	_devices.add(name.get_hash(), &device);
 	
 	return true;
+}
+
+List<Core *> DeviceManager::cores() {
+    List<Core *> __cores;
+
+    for (auto device : DeviceManager::devices()) {
+        if (device.value->device_class().is(Core::CoreDeviceClass)) {
+            __cores.append((Core*) device.value);
+        }
+    }
+
+    return __cores;
 }

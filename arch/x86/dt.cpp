@@ -15,15 +15,15 @@
 using namespace infos::arch::x86;
 
 // GDT, IDT and TSS instantiation -- make sure they're aligned nicely.
-__aligned(16) GDT infos::arch::x86::gdt;
+//__aligned(16) GDT infos::arch::x86::gdt;
 __aligned(16) IDT infos::arch::x86::idt;
-__aligned(16) TSS infos::arch::x86::tss;
+//__aligned(16) TSS infos::arch::x86::tss;
 
 /**
  * Initialises the Global Descriptor Table
  * @return Returns true if initialisation was successful, false otherwise.
  */
-bool GDT::init()
+bool GDT::init(TSS *tss)
 {
 	// Clear the GDT.
 	erase();
@@ -40,7 +40,7 @@ bool GDT::init()
 	if (!add_data_segment(3)) return false;			// 20
 	
 	// TSS
-	if (!add_tss((void *)tss.__tss, sizeof(tss.__tss))) return false;	// 28
+    if (!add_tss((void *)tss->__tss, sizeof(tss->__tss))) return false;	// 28
 	
 	return reload();
 }

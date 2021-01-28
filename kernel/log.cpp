@@ -38,7 +38,7 @@ void SysLog::message(LogLevel::LogLevel level, const char* message)
 	if (!enabled()) return;
 	
 	if (_stream) {
-		UniqueLock<Mutex> l(_mtx);
+		UniqueLock<Spinlock> l(_spnlck);
 
 		switch (level) {
 		case LogLevel::DEBUG:

@@ -5,6 +5,7 @@
 #include <infos/kernel/sched.h>
 #include <infos/drivers/irq/lapic.h>
 #include <infos/util/map.h>
+#include <arch/x86/dt.h>
 
 namespace infos {
     namespace drivers {
@@ -22,6 +23,7 @@ namespace infos {
                 const DeviceClass& device_class() const override { return CoreDeviceClass; }
 
                 bool init(kernel::DeviceManager& dm) override;
+                void init_dts();
 
                 Core(uint8_t processor_id, uint8_t lapic_id, core_state state);
                 uint8_t get_processor_id();
@@ -41,6 +43,9 @@ namespace infos {
                 static Core* get_current_core();
                 static Core** get_cores();
 
+                infos::arch::x86::TSS &tss() { return tss_; }
+                infos::arch::x86::GDT &gdt() { return gdt_; }
+
             private:
                 uint8_t processor_id;
                 uint8_t lapic_id;
@@ -48,7 +53,11 @@ namespace infos {
                 LAPIC *lapic;
                 kernel::Scheduler scheduler;
                 volatile bool initialised;
-                static Core* cores[32];
+//                static Core* cores[32];
+                static util::Map<uint8_t, Core*> cores;
+                __aligned(16) infos::arch::x86::GDT gdt_;
+                // __aligned(16) infos::arch::x86::IDT idt_;
+                __aligned(16) infos::arch::x86::TSS tss_;
             };
         }
     }
