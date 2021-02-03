@@ -193,9 +193,13 @@ bool LAPICTimer::expired() const
 void LAPICTimer::lapic_timer_irq_handler(const IRQ *irq, void* priv)
 {
 	// HACK HACK HACK -- this shouldn't be hard-coded in
-	// todo: this seems like it might cause a problem...
 	Scheduler& sched = Core::get_current_core()->get_scheduler();
-	sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(10)));		// Tell the kernel to update its internal runtime with +10mS
+
+    // Only have the BSP update the system runtime
+    if (Core::get_current_core()->get_state() == irq::Core::core_state::BOOTSTRAP) {
+        sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(10)));		// Tell the kernel to update its internal runtime with +10mS
+    }
+
 	sched.update_accounting();		// Tell the scheduler to update process accounting
 	sched.schedule();					// Cause a scheduling event to occur
 }

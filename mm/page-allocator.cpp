@@ -179,7 +179,7 @@ PageDescriptor *PageAllocator::alloc_pages(int order)
 	if (!_allocator_algorithm)
 		return NULL;
 	
-	UniqueLock<Mutex> l(_mtx);
+	UniqueLock<Spinlock> l(_spnlck);
 	PageDescriptor *pgd = _allocator_algorithm->alloc_pages(order);
 	
 	// Double check that all the pages are marked as available, and
@@ -202,7 +202,7 @@ void PageAllocator::free_pages(PageDescriptor* pgd, int order)
 {
 	// Call into the algorithm to actually free the pages.
 	if (_allocator_algorithm) {
-		UniqueLock<Mutex> l(_mtx);
+		UniqueLock<Spinlock> l(_spnlck);
 		_allocator_algorithm->free_pages(pgd, order);
 
 		// Double-check that all the pages were allocated, and mark them as available.

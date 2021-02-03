@@ -21,11 +21,6 @@
 #include <infos/kernel/process.h>
 #include <infos/util/string.h>
 
-extern "C" {
-//    infos::kernel::Thread *current_thread[256];
-    infos::kernel::Thread *current_thread;
-}
-
 using namespace infos::arch;
 using namespace infos::arch::x86;
 using namespace infos::drivers::irq;
@@ -91,7 +86,6 @@ bool X86Arch::init_irq()
 	if (!_irq_manager.init()) {
 		return false;
 	}
-	
 	_irq_manager.install_exception_handler(IRQ_GPF, general_protection_fault, NULL);
 	_irq_manager.install_exception_handler(IRQ_TRAP, trap_interrupt, NULL);
 	_irq_manager.install_software_handler(IRQ_KERNEL_SYSCALL, kernel_syscall_handler, NULL);
@@ -159,25 +153,15 @@ void X86Arch::invoke_kernel_syscall(int nr)
 
 infos::kernel::Thread& X86Arch::get_current_thread() const
 {
-//    Thread *current_thread = Core::get_current_core()->get_scheduler().current_thread();
-
-//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-//    return *current_thread[apic_id];
-
-    return *current_thread;
+    return *Core::get_current_core()->get_scheduler().current_thread();
 }
 
 void X86Arch::set_current_thread(kernel::Thread& thread)
 {
 	asm volatile("mov %0, %%cr3" :: "r"(thread.owner().vma().pgt_base()) : "memory");
-//	Core::get_current_core()->tss().set_kernel_stack(thread.context().kernel_stack);
 
-//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-//    current_thread[apic_id] = &thread;
-
-//    Core::get_current_core()->get_scheduler().set_current_thread(thread);
     Core::get_current_core()->tss().set_kernel_stack(thread.context().kernel_stack);
-    current_thread = &thread;
+    Core::get_current_core()->get_scheduler().set_current_thread(thread);
 }
 
 IRQ *X86Arch::request_irq()
@@ -189,31 +173,20 @@ IRQ *X86Arch::request_irq()
 extern "C" {
 	void *get_current_thread_context()
 	{
-//        Thread *current_thread = Core::get_current_core()->get_scheduler().current_thread();
-
-//        uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-//        if(!current_thread[apic_id]) return NULL;
-
-        if (!current_thread) return NULL;
-
-		//assert(current_thread);
-		return &current_thread->context();
-//		return &current_thread[apic_id]->context();
+        return (void *)&Core::get_current_core()->get_scheduler().current_thread()->context();
 	}
 	
 	void __debug_save_context()
 	{
-//        uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
 //        Thread *current_thread = Core::get_current_core()->get_scheduler().current_thread();
-		assert(current_thread);
-		syslog.messagef(LogLevel::DEBUG, "Save Context %p %p", current_thread, current_thread->context());
+//		assert(current_thread);
+//		syslog.messagef(LogLevel::DEBUG, "Save Context %p %p", current_thread, current_thread->context());
 	}
 
 	void __debug_restore_context()
 	{
-//        uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
 //        Thread *current_thread = Core::get_current_core()->get_scheduler().current_thread();
-        assert(current_thread);
-		syslog.messagef(LogLevel::DEBUG, "Restore Context %p %p", current_thread, current_thread->context());
+//        assert(current_thread);
+//		syslog.messagef(LogLevel::DEBUG, "Restore Context %p %p", current_thread, current_thread->context());
 	}
 }

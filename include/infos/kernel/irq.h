@@ -12,7 +12,7 @@ namespace infos
 		public:
 			typedef void (*irq_handler_t)(const IRQ *irq, void *priv);
 			
-			IRQ() : _nr(0), _handler(NULL), _priv(NULL) { }
+			IRQ() : _nr(0), _handler(NULL), _priv(NULL) {}
 			
 			uint32_t nr() const { return _nr; }
 			void assign(uint32_t nr) { _nr = nr; }

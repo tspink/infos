@@ -50,13 +50,8 @@ bool infos::arch::x86::cpu_init()
     if (!sys.device_manager().try_get_device_by_class(PIT::PITDeviceClass, pit))
         return false;
 
-
-
-    // Messy hack: we don't know the number of cores before the static cores array is created,
-    // so we declare size 32 (max number of cores supported) and initialise all as nullptrs
-    // then reassign indices of cores that exist with core objects
     if (init_smp) {
-        List<Core*> cores = sys.device_manager().cores();
+        util::List<Core*> cores = sys.device_manager().cores();
 
         for (Core* core : cores) {
             if (core->get_state() == Core::core_state::OFFLINE) {
@@ -65,19 +60,6 @@ bool infos::arch::x86::cpu_init()
                 start_core(core, lapic, pit);
             }
         }
-
-//        Core** cores = Core::get_cores();
-//
-//        for (int i = 0; i < 32; i++) {
-//            Core* core = *(cores+i);
-//            if (core == nullptr) continue; // reached end of core array
-//
-//            if (core->get_state() == Core::core_state::OFFLINE) {
-//                // Start the core!
-//                cpu_log.messagef(LogLevel::DEBUG, "starting core %u", core->get_lapic_id());
-//                start_core(core, lapic, pit);
-//            }
-//        }
 
         // Once all cores have been initialised, remove the zero
         // page mapping used for AP trampoline code

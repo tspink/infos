@@ -30,17 +30,10 @@ namespace infos
 
                 bool expired() const override;
 
-                // For use when using the PIT to time or calibrate something
-                void lock() { _mtx.lock(); }
-                void unlock() { _mtx.unlock(); }
-
                 uint64_t count() const override;
                 uint64_t frequency() const override { return 1193180; }
 
                 void spin(uint64_t nanoseconds);
-
-            private:
-			    util::Mutex _mtx;
             };
 		}
 	}

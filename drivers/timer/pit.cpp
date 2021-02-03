@@ -24,7 +24,6 @@ PIT::PIT()
 
 void PIT::start()
 {
-//	_spnlck.lock();
 	uint8_t data = __inb(0x61);
 	
 	data &= 0xfe;
@@ -35,12 +34,11 @@ void PIT::start()
 
 void PIT::stop()
 {
-//	_spnlck.unlock();
+
 }
 
 void PIT::reset()
 {
-//    _spnlck.unlock();
 
 }
 
@@ -74,12 +72,10 @@ void PIT::init_periodic(uint64_t period)
 
 void PIT::spin(uint64_t nanoseconds)
 {
-//    lock();
     uint64_t period = (frequency() * nanoseconds) / 1000000000ull;
     init_oneshot(period);
 
     start();
     while (!expired()) asm volatile("nop");
     stop();
-//    unlock();
 }

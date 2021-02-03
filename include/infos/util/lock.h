@@ -62,14 +62,12 @@ namespace infos
             void unlock() override;
 
             bool locked() { return !!_locked; }
-            bool locked_by_me();
 
         private:
             Spinlock(const Spinlock& c);
             Spinlock(const Spinlock&& c);
 
             volatile unsigned long _locked;
-            kernel::Thread *_owner;
         };
 		
 		class ConditionVariable

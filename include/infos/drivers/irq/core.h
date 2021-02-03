@@ -41,7 +41,6 @@ namespace infos {
 
                 static void add_core(Core* new_core);
                 static Core* get_current_core();
-                static Core** get_cores();
 
                 infos::arch::x86::TSS &tss() { return tss_; }
                 infos::arch::x86::GDT &gdt() { return gdt_; }
@@ -53,8 +52,7 @@ namespace infos {
                 LAPIC *lapic;
                 kernel::Scheduler scheduler;
                 volatile bool initialised;
-//                static Core* cores[32];
-                static util::Map<uint8_t, Core*> cores;
+                static infos::util::Map<uint8_t, Core*> cores;
                 __aligned(16) infos::arch::x86::GDT gdt_;
                 // __aligned(16) infos::arch::x86::IDT idt_;
                 __aligned(16) infos::arch::x86::TSS tss_;

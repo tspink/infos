@@ -113,7 +113,7 @@ namespace infos
 			uint64_t _nr_pages;
 			PageDescriptor *_page_descriptors;
 			PageAllocatorAlgorithm *_allocator_algorithm;
-			util::Mutex _mtx;
+			util::Spinlock _spnlck;
 			
 			bool setup_page_descriptors();
 			bool self_test();

@@ -31,8 +31,6 @@ using namespace infos::kernel;
 using namespace infos::mm;
 using namespace infos::util;
 
-extern "C" infos::kernel::Thread *current_thread;
-
 /**
  * Page fault handler
  * @param irq The IRQ object associated with this exception.
@@ -44,9 +42,7 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	uint64_t fault_address;
 	asm volatile("mov %%cr2, %0" : "=r"(fault_address));
 
-//	Scheduler sched = Core::get_current_core()->get_scheduler();
-//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-
+    Thread *current_thread = Core::get_current_core()->get_scheduler().current_thread();
 
     if (current_thread == NULL) {
 		// If there is no current_thread, then this page fault happened REALLY
@@ -57,7 +53,6 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	}
 
 	// If there is a current thread, abort it.
-//    uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
     syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p, core id=", fault_address, current_thread->context().native_context->rip);
 	
 	// TODO: support passing page-faults into threads.

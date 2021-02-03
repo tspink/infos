@@ -61,13 +61,12 @@ namespace infos
 				const IRQDescriptor *get_irq_descriptor(uint8_t nr) const { return &irq_descriptors[nr]; }
 
             private:
-                util::Mutex _mtx;
                 IRQDescriptor irq_descriptors[MAX_IRQS];
 
 				template<typename T>
 				bool install_handler(uint8_t nr, kernel::IRQ::irq_handler_t handler, void *priv);
 			};
-			
+
 			static inline uint64_t __save_flags()
 			{
 				uint64_t flags;

@@ -31,9 +31,7 @@ bool DeviceManager::register_device(drivers::Device& device)
 	device.assign_name(String(device.device_class().name) + ToString(instance));
     dm_log.messagef(LogLevel::DEBUG, "registering device '%s'", device.name().c_str());
 
-//    _spnlck.lock();
     _devices.add(device.name().get_hash(), &device);
-//    _spnlck.unlock();
 
     if (!device.init(*this)) {
 		dm_log.messagef(LogLevel::ERROR, "device '%s' failed to initialise", device.name().c_str());

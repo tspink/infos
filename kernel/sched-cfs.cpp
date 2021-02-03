@@ -77,4 +77,4 @@ private:
 
 /* --- DO NOT CHANGE ANYTHING BELOW THIS LINE --- */
 
-RegisterScheduler(CompletelyFairScheduler);
+RegisterScheduler(CompletelyFairScheduler, "cfs");

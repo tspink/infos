@@ -207,24 +207,31 @@ void Scheduler::set_current_thread(Thread &thread) { _current_thread = &thread; 
 
 extern char _SCHED_ALG_PTR_START, _SCHED_ALG_PTR_END;
 
-SchedulingAlgorithm* Scheduler::acquire_scheduler_algorithm()
+SchedulingAlgorithm *Scheduler::acquire_scheduler_algorithm()
 {
-	if (strlen(sched_algorithm) == 0) {
-		sched_log.messagef(LogLevel::ERROR, "Scheduling allocation algorithm not chosen on command-line");
-		return NULL;
-	}
-	
-	SchedulingAlgorithm *candidate = NULL;
-	SchedulingAlgorithm **schedulers = (SchedulingAlgorithm **)&_SCHED_ALG_PTR_START;
-	
-	sched_log.messagef(LogLevel::DEBUG, "Searching for '%s' algorithm...", sched_algorithm);
-	while (schedulers < (SchedulingAlgorithm **)&_SCHED_ALG_PTR_END) {
-		if (strncmp((*schedulers)->name(), sched_algorithm, sizeof(sched_algorithm)-1) == 0) {
-			candidate = *schedulers;
-		}
-		
-		schedulers++;
-	}
-		
-	return candidate;
+    if (strlen(sched_algorithm) == 0)
+    {
+        sched_log.messagef(LogLevel::ERROR, "Scheduling allocation algorithm not chosen on command-line");
+        return NULL;
+    }
+
+    SchedulingAlgorithmFactory *schedulers = (SchedulingAlgorithmFactory *)&_SCHED_ALG_PTR_START;
+
+    sched_log.messagef(LogLevel::DEBUG, "Searching for '%s' algorithm...", sched_algorithm);
+    while (schedulers < (SchedulingAlgorithmFactory *)&_SCHED_ALG_PTR_END)
+    {
+        SchedulingAlgorithm *candidate = (*schedulers)();
+
+        sched_log.messagef(LogLevel::DEBUG, "Found '%s' algorithm...", candidate->name());
+        if (strncmp(candidate->name(), sched_algorithm, sizeof(sched_algorithm) - 1) == 0)
+        {
+            return candidate;
+        }
+
+        delete candidate;
+
+        schedulers++;
+    }
+
+    return nullptr;
 }

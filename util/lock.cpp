@@ -23,11 +23,11 @@ void Mutex::lock()
 {
 	while (__sync_lock_test_and_set(&_locked, 1)) {
 //	    infos::arch::x86::__outb(0xe9, 0x41);
-// todo: still causing issues
-		infos::kernel::sys.arch().invoke_kernel_syscall(1);
+//		infos::kernel::sys.arch().invoke_kernel_syscall(1);
+        asm volatile ("nop");
 	}
 	
-	_owner = &Thread::current();
+//	_owner = &Thread::current(); // todo: this is the problem
 }
 
 void Mutex::unlock()
@@ -42,18 +42,12 @@ bool Mutex::locked_by_me()
 
 void Spinlock::lock()
 {
-    while (__sync_lock_test_and_set(&_locked, 1));
-    _owner = &Thread::current();
+    while (__sync_lock_test_and_set(&_locked, 1)) { asm volatile ("nop"); }
 }
 
 void Spinlock::unlock()
 {
     __sync_lock_release(&_locked);
-}
-
-bool Spinlock::locked_by_me()
-{
-    return locked() && _owner == &Thread::current();
 }
 
 void ConditionVariable::wait(Mutex& mtx)

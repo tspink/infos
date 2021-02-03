@@ -32,8 +32,10 @@ namespace infos
 			virtual void add_to_runqueue(SchedulingEntity& entity) = 0;
 			virtual void remove_from_runqueue(SchedulingEntity& entity) = 0;
 		};
-		
-		class Scheduler : public Subsystem
+
+		typedef SchedulingAlgorithm *(*SchedulingAlgorithmFactory)(void);
+
+        class Scheduler : public Subsystem
 		{
 		public:
 			Scheduler(Kernel& owner);
@@ -69,7 +71,9 @@ namespace infos
 		};
 		
 		extern ComponentLog sched_log;
-				
-		#define RegisterScheduler(_class) static _class __sched_alg_##_class; __section(".schedalg") infos::kernel::SchedulingAlgorithm *__sched_alg_ptr_##_class = &__sched_alg_##_class
+
+        #define RegisterScheduler(_class, _name)                                                        \
+	    static infos::kernel::SchedulingAlgorithm *__sched_alg_factory_##_class() { return new _class(); } \
+	    __section(".schedalg") infos::kernel::SchedulingAlgorithmFactory _sched_alg_factor_ptr_##_class = __sched_alg_factory_##_class;
 	}
 }

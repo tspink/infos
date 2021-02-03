@@ -9,7 +9,6 @@ using namespace infos::drivers::irq;
 using namespace infos::kernel;
 
 const DeviceClass infos::drivers::irq::Core::CoreDeviceClass(RootDeviceClass, "core");
-//Core* Core::cores[32] = {};
 infos::util::Map<uint8_t, Core*> Core::cores;
 
 Core::Core(uint8_t processor_id, uint8_t lapic_id, core_state state) :
@@ -24,7 +23,6 @@ void Core::init_dts()
 {
     syslog.messagef(kernel::LogLevel::IMPORTANT, "About to initialise GDT");
     gdt_.init(&tss_);
-    gdt_.reload();
     tss_.init(0x28);
 
     idt.reload();
@@ -41,20 +39,19 @@ bool Core::is_initialised() { return initialised; }
 void Core::set_initialised(bool initialised) { this->initialised = initialised; }
 
 void Core::set_state(Core::core_state) { Core::state = state; }
-void Core::add_core(Core* new_core) {
-    Core::cores.add(new_core->get_lapic_id(), new_core);
-    //    Core::cores[new_core->get_lapic_id()] = new_core;
-}
+void Core::add_core(Core* new_core) { Core::cores.add(new_core->get_lapic_id(), new_core); }
 
 Core* Core::get_current_core() {
     uint8_t apic_id = (*(uint32_t *)(pa_to_vpa((__rdmsr(MSR_APIC_BASE) & ~0xfff) + 0x20))) >> 24;
-//    return cores[apic_id];
-    Core* core;
-    cores.try_get_value(apic_id, core);
-    return core;
-}
+    Core *current_core;
 
-//Core** Core::get_cores() { return cores; }
+    if (!cores.try_get_value(apic_id, current_core)) {
+        arch_abort();
+        return nullptr;
+    }
+
+    return current_core;
+}
 
 bool Core::sched_init() { return scheduler.init(); }
 
