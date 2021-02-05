@@ -226,8 +226,44 @@ void Kernel::increment_tod()
 			_tod.hours++;
 			if (_tod.hours > 23) {
 				_tod.hours = 0;
-				
-				// oh no!
+				_tod.day++;
+				if (_tod.day > 28)
+				{
+					switch (_tod.month) {
+						case 1:
+						case 3:
+						case 5:
+						case 7:
+						case 8:
+						case 10:
+						case 12:
+							_tod.day %= 32;
+							break;
+						case 2: {
+							bool is_leap_year = (_tod.year % 4 == 0) && (!(_tod.year % 100 == 0) || (_tod.year % 400 == 0));
+							_tod.day %= is_leap_year ? 30 : 29;
+							break;
+						}
+						case 4:
+						case 6:
+						case 9:
+						case 11:
+							_tod.day %= 31;
+							break;
+					}
+
+					// Update month if days were reset
+					if (_tod.day == 0) {
+						_tod.day++;
+						_tod.month++;
+
+						if (_tod.month > 12)
+						{
+							_tod.month = 1;
+							_tod.year++;
+						}
+					}
+				}
 			}
 		}
 	}
