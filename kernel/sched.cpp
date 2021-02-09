@@ -2,10 +2,10 @@
 
 /*
  * kernel/sched.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/kernel/sched.h>
@@ -55,13 +55,13 @@ bool Scheduler::init()
 
 	Process *idle_process = new Process("idle", true, (Thread::thread_proc_t)idle_task);
 	_idle_entity = &idle_process->main_thread();
-	
+
 	SchedulingAlgorithm *algo = acquire_scheduler_algorithm();
 	if (!algo) {
 		syslog.messagef(LogLevel::ERROR, "No scheduling algorithm available");
 		return false;
 	}
-	
+
 	syslog.messagef(LogLevel::IMPORTANT, "*** USING SCHEDULER ALGORITHM: %s", algo->name());
 
 	// Install the discovered algorithm.
@@ -72,7 +72,7 @@ bool Scheduler::init()
 	// saved and restored.
 	idle_process->start();
 	idle_process->main_thread().activate(NULL);
-	
+
 	// But also remove the idle thread from the algorithms run queue, as the
 	// scheduler shouldn't be scheduling this as a regular task.
 	algo->remove_from_runqueue(idle_process->main_thread());
@@ -87,7 +87,7 @@ void Scheduler::run()
 	// to be, and the kernel will only run processes.
 	sched_log.message(LogLevel::INFO, "Activating scheduler...");
 	_active = true;
-	
+
 	// Enable interrupts
 	syslog.messagef(LogLevel::DEBUG, "Enabling interrupts");
 	owner().arch().enable_interrupts();
@@ -111,16 +111,16 @@ void Scheduler::schedule()
 {
 	if (!_active) return;
 	if (!_algorithm) return;
-	
+
 	// Ask the scheduling algorithm for the next process.
 	SchedulingEntity *next = _algorithm->pick_next_entity();
-	
+
 	// If the algorithm refused to return a process, then schedule
 	// the idle entity.
 	if (!next) {
 		next = _idle_entity;
 	}
-	
+
 	// If the next task to run, is NOT the currently running task...
 	if (next != _current) {
 		// Activate the next task.
@@ -138,12 +138,12 @@ void Scheduler::schedule()
 			_current = _idle_entity;
 		}
 	}
-	
+
 	// Update the execution start time for the task that's about to run.
 	_current->update_exec_start_time(owner().runtime());
-	
+
 	// Debugging output for the scheduler.
-	sched_log.messagef(LogLevel::DEBUG, "Scheduled %p (%s)", _current, ((Thread *)_current)->owner().name().c_str());
+	sched_log.messagef(LogLevel::DEBUG, "Scheduled %p (%s/%s)", _current, ((Thread *)_current)->owner().name().c_str(), ((Thread *)_current)->name().c_str());
 }
 
 /**
@@ -156,10 +156,10 @@ void Scheduler::update_accounting()
 
 		// Calculate the delta.
 		SchedulingEntity::EntityRuntime delta = now - _current->_exec_start_time;
-		
+
 		// Increment the CPU runtime.
 		_current->increment_cpu_runtime(delta);
-		
+
 		// Update the exec start time.
 		_current->update_exec_start_time(now);
 	}
@@ -192,7 +192,7 @@ void Scheduler::set_entity_state(SchedulingEntity& entity, SchedulingEntityState
 		// The entity can only transition into RUNNING if it is currently RUNNABLE
 		assert(entity._state == SchedulingEntityState::RUNNABLE);
 	}
-	
+
 	// Record the new state in the entity.
 	entity._state = state;
 	entity._state_changed.trigger();
@@ -206,18 +206,18 @@ SchedulingAlgorithm* Scheduler::acquire_scheduler_algorithm()
 		sched_log.messagef(LogLevel::ERROR, "Scheduling allocation algorithm not chosen on command-line");
 		return NULL;
 	}
-	
+
 	SchedulingAlgorithm *candidate = NULL;
 	SchedulingAlgorithm **schedulers = (SchedulingAlgorithm **)&_SCHED_ALG_PTR_START;
-	
+
 	sched_log.messagef(LogLevel::DEBUG, "Searching for '%s' algorithm...", sched_algorithm);
 	while (schedulers < (SchedulingAlgorithm **)&_SCHED_ALG_PTR_END) {
 		if (strncmp((*schedulers)->name(), sched_algorithm, sizeof(sched_algorithm)-1) == 0) {
 			candidate = *schedulers;
 		}
-		
+
 		schedulers++;
 	}
-		
+
 	return candidate;
 }

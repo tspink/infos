@@ -2,10 +2,10 @@
 
 /*
  * include/util/string.h
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #pragma once
@@ -64,7 +64,7 @@ namespace infos {
 
             // Move Constructor
 
-            String(const String&& str)
+            String(String&& str)
             : _size(str._size),
             _data(str._data),
             _has_hash(str._has_hash),
@@ -102,7 +102,7 @@ namespace infos {
             /**
              * Retrieves the hash of this string, lazily computing it
              * if necessary.
-             * 
+             *
              * @return Returns a 64-bit hash of the string.
              */
             hash_type get_hash() const {

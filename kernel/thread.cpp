@@ -2,10 +2,10 @@
 
 /*
  * kernel/thread.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/kernel/thread.h>
@@ -26,24 +26,25 @@ using namespace infos::util;
 /**
  * Constructs a new thread object.
  */
-Thread::Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, thread_proc_t entry_point) 
+Thread::Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, thread_proc_t entry_point, const util::String& name)
 	: _owner(owner),
 		_privilege(privilege),
 		_entry_point(entry_point),
-		_current_entry_argument(0)
+		_current_entry_argument(0),
+		_name(name)
 {
 	// Clear out the thread context.
 	bzero(&_context, sizeof(_context));
-	
+
 	// Allocate the kernel stack for this thread.
 	auto kernel_stack_pgd = owner.vma().allocate_phys(KERNEL_STACK_ORDER);
 	assert(kernel_stack_pgd);
-	
+
 	// Record the base address of the kernel stack.  Stacks grow down, so add on the size of the stack
 	// to the base address to create the starting address.
 	_context.kernel_stack = (uintptr_t)sys.mm().pgalloc().pgd_to_vpa(kernel_stack_pgd);
 	_context.kernel_stack += KERNEL_STACK_SIZE;
-	
+
 	// Prepare the initial stack for this thread.  Threads ALWAYS start in kernel mode, irrespective of whether or
 	// not they are user threads.  This stack will set-up the thread context.
 	prepare_initial_stack();
@@ -72,11 +73,11 @@ void Thread::add_entry_argument(void* arg)
 	case 3:
 		_context.native_context->rcx = (uint64_t)arg;
 		break;
-		
+
 	default:
 		return;
 	}
-	
+
 	_current_entry_argument++;
 }
 
@@ -96,7 +97,7 @@ void Thread::stop()
 {
 	// Set the state of this thread to be stopped.
 	sys.scheduler().set_entity_state(*this, SchedulingEntityState::STOPPED);
-	
+
 	// If this thread is currently running, then we must yield so that
 	// execution doesn't return into it.
 	if (&Thread::current() == this) {
@@ -107,7 +108,7 @@ void Thread::stop()
 void Thread::sleep()
 {
 	sys.scheduler().set_entity_state(*this, SchedulingEntityState::SLEEPING);
-	
+
 	if (&Thread::current() == this) {
 		sys.arch().invoke_kernel_syscall(1);
 	}
@@ -125,13 +126,13 @@ bool Thread::activate(SchedulingEntity *prev)
 {
 	// This thread can only be activated if it is runnable.
 	assert(state() == SchedulingEntityState::RUNNABLE);
-	
+
 	// If the previous thread was actually us, then there's nothing to do.
 	if (prev == this) return true;
-	
+
 	// Set the current thread to be us.
 	sys.arch().set_current_thread(*this);
-	
+
 	// Success!
 	return true;
 }
@@ -139,8 +140,8 @@ bool Thread::activate(SchedulingEntity *prev)
 void Thread::allocate_user_stack(virt_addr_t vaddr, size_t size)
 {
 	int nr_pages = __align_up_page(size) >> 12;
-	
-	_owner.vma().allocate_virt(vaddr, nr_pages);	
+
+	_owner.vma().allocate_virt(vaddr, nr_pages);
 	_context.native_context->rsp = vaddr + size;
 }
 
@@ -152,7 +153,7 @@ Thread& Thread::current()
 void Thread::prepare_initial_stack()
 {
 	uint64_t *stack = (uint64_t *)context().kernel_stack;
-	
+
 	// System Context
 	*--stack = is_kernel_thread() ? 0x10 : 0x23;	// SS
 	*--stack = 0;									// RSP
@@ -160,7 +161,7 @@ void Thread::prepare_initial_stack()
 	*--stack = is_kernel_thread() ? 0x8 : 0x1b;		// CS
 	*--stack = (uint64_t)_entry_point;				// RIP
 	*--stack = 0;									// EXTRA
-	
+
 	// Thread Context
 	*--stack = 0;	// RAX
 	*--stack = 0;	// RBX
@@ -179,6 +180,6 @@ void Thread::prepare_initial_stack()
 	*--stack = 0;	// R15
 	*--stack = 0;	// Previous Context
 
-	_context.native_context = (X86Context *)((uintptr_t)stack);	
+	_context.native_context = (X86Context *)((uintptr_t)stack);
 	_context.native_context->rsp = (uint64_t)context().kernel_stack;
 }

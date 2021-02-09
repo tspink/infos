@@ -73,6 +73,7 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 
 	mgr.RegisterSyscall(15, (SyscallManager::syscallfn) DefaultSyscalls::sys_usleep);
 	mgr.RegisterSyscall(16, (SyscallManager::syscallfn) DefaultSyscalls::sys_get_tod);
+	mgr.RegisterSyscall(17, (SyscallManager::syscallfn) DefaultSyscalls::sys_set_thread_name);
 }
 
 void DefaultSyscalls::sys_nop()
@@ -209,7 +210,7 @@ unsigned int DefaultSyscalls::sys_wait_proc(ObjectHandle h)
 
 ObjectHandle DefaultSyscalls::sys_create_thread(uintptr_t entry_point, uintptr_t arg)
 {
-	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point);
+	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point, "other");
 	ObjectHandle h = sys.object_manager().register_object(Thread::current(), &t);
 
 	virt_addr_t stack_addr = 0x7fff00000000;
@@ -280,4 +281,16 @@ unsigned int DefaultSyscalls::sys_get_tod(uintptr_t tpstruct)
 	userspace_tod->year = tod.year;
 
 	return 0;
+}
+
+void DefaultSyscalls::sys_set_thread_name(ObjectHandle h, uintptr_t name)
+{
+	Thread *t;
+	if (h == (ObjectHandle) - 1) {
+		t = &Thread::current();
+	} else {
+		t = (Thread *) sys.object_manager().get_object_secure(Thread::current(), h);
+	}
+
+	t->name((const char *)name);
 }
