@@ -45,6 +45,12 @@ Thread::Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, threa
 	_context.kernel_stack = (uintptr_t)sys.mm().pgalloc().pgd_to_vpa(kernel_stack_pgd);
 	_context.kernel_stack += KERNEL_STACK_SIZE;
 
+	/*auto xsave_area_pgd = owner.vma().allocate_phys(0);
+	assert(xsave_area_pgd);
+	_context.xsave_area = (uintptr_t)sys.mm().pgalloc().pgd_to_vpa(xsave_area_pgd);
+
+	bzero((void *)_context.xsave_area, 0x1000);*/
+
 	// Prepare the initial stack for this thread.  Threads ALWAYS start in kernel mode, irrespective of whether or
 	// not they are user threads.  This stack will set-up the thread context.
 	prepare_initial_stack();
@@ -142,7 +148,7 @@ void Thread::allocate_user_stack(virt_addr_t vaddr, size_t size)
 	int nr_pages = __align_up_page(size) >> 12;
 
 	_owner.vma().allocate_virt(vaddr, nr_pages);
-	_context.native_context->rsp = vaddr + size;
+	_context.native_context->rsp = vaddr + size - 8;
 }
 
 Thread& Thread::current()
