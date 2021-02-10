@@ -2,10 +2,10 @@
 
 /*
  * include/kernel/thread-context.h
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #pragma once
@@ -19,8 +19,9 @@ namespace infos
 	{
 		struct ThreadContext
 		{
-			X86Context *native_context;
-			uintptr_t kernel_stack;
+			X86Context *native_context;		// 0
+			uintptr_t kernel_stack;			// 8
+			uintptr_t xsave_area;			// 16
 		} __packed;
 	}
 }

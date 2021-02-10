@@ -113,7 +113,7 @@ start32:
     wrmsr
 
     // CR0
-    mov $(CR0_PG | CR0_PE | CR0_MP | CR0_WP | CR0_AM), %eax
+    mov $(CR0_PG | CR0_PE | CR0_MP | CR0_WP), %eax
     mov %eax, %cr0
 
     // XCR0

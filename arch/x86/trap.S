@@ -5,7 +5,7 @@
  *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 .code64
@@ -34,20 +34,41 @@
 
 	// Load the pointer to the thread context into RAX
 	call get_current_thread_context
+	mov %rax, %rcx
+	mov 0x10(%rcx), %rdi
 
-	// 0(%rax) is the pointer to the native context, so push this
+	test %rdi, %rdi
+	jz 1f
+
+	xor %edx, %edx
+	mov $7, %eax
+	xsave (%rdi)
+
+1:
+	// 0(%rcx) is the pointer to the native context, so push this
 	// onto the stack.
-	push (%rax)
+	push (%rcx)
 
 	// Now, store the pointer to the new native context into
 	// the current thread's native context pointer.
-	mov %rsp, (%rax)	
+	mov %rsp, (%rcx)
 .endm
 
 .macro restore_context
 	call get_current_thread_context
-	mov (%rax), %rsp
-	pop (%rax)
+	mov %rax, %rcx
+	mov 0x10(%rcx), %rdi
+
+	test %rdi, %rdi
+	jz 1f
+
+	xor %edx, %edx
+	mov $7, %eax
+	xrstor (%rdi)
+
+1:
+	mov (%rcx), %rsp
+	pop (%rcx)
 
 	pop %r15
 	pop %r14
