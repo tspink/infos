@@ -2,10 +2,10 @@
 
 /*
  * kernel/kernel.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/kernel/kernel.h>
@@ -64,15 +64,15 @@ _vfs(*this)
 void Kernel::start(BottomFn bottom)
 {
 	syslog.message(LogLevel::INFO, "OK!  Starting the kernel...");
-	
+
 	initialise_tod();
-	
+
 	_kernel_process = new Process("kernel", true, (Thread::thread_proc_t) &start_kernel_threadproc_tramp);
-	
+
 	_kernel_process->main_thread().add_entry_argument((void *) this);
 	_kernel_process->main_thread().add_entry_argument((void *)bottom);
 	_kernel_process->start();
-		
+
 	syslog.messagef(LogLevel::DEBUG, "Running scheduler");
 	scheduler().run();
 }
@@ -81,7 +81,7 @@ void Kernel::start_kernel_threadproc_tramp(Kernel* kernel, BottomFn bottom)
 {
 	assert(kernel);
 	assert(bottom);
-	
+
 	syslog.messagef(LogLevel::INFO, "Now executing in the kernel thread");
 
 	if (!bottom()) {
@@ -96,37 +96,37 @@ void Kernel::start_kernel_threadproc_tramp(Kernel* kernel, BottomFn bottom)
 void Kernel::start_kernel_threadproc()
 {
 	DefaultSyscalls::RegisterDefaultSyscalls(syscalls());
-	
+
 	if (!vfs().init()) {
 		syslog.message(LogLevel::FATAL, "Unable to initialise the FS subsystem");
 		arch_abort();
 	}
-	
+
 	syslog.message(LogLevel::INFO, "Mounting tmpfs root...");
 	VFSNode *root = vfs().lookup_node("/");
-	
+
 	if (!root->mount("tmpfs", NULL)) {
 		syslog.message(LogLevel::FATAL, "Unable to mount tmpfs root filesystem");
 		arch_abort();
 	}
-	
+
 	VFSNode *dev = root->mkdir("dev");
 	if (!dev) {
 		syslog.message(LogLevel::FATAL, "Unable to create mountpoint for device filesystem");
 		arch_abort();
 	}
-	
+
 	if (!dev->mount("devfs", NULL)) {
 		syslog.message(LogLevel::FATAL, "Unable to mount device filesystem");
 		arch_abort();
 	}
-	
+
 	VFSNode *usr = root->mkdir("usr");
 	if (!usr) {
 		syslog.message(LogLevel::FATAL, "Unable to create mountpoint for userspace filesystem");
 		arch_abort();
 	}
-	
+
 	if (strlen(boot_device_name) == 0) {
 		syslog.message(LogLevel::FATAL, "No boot device specified");
 		dump_partitions();
@@ -143,23 +143,23 @@ void Kernel::start_kernel_threadproc()
 	if (strlen(boot_fstype) == 0) {
 		strncpy(boot_fstype, "internal_driver", 16);
 	}
-	
+
 	util::String bootfstype = boot_fstype;
 
-	syslog.messagef(LogLevel::INFO, "Booting from '%s'...", boot_device->name().c_str());	
-	
+	syslog.messagef(LogLevel::INFO, "Booting from '%s'...", boot_device->name().c_str());
+
 	syslog.messagef(LogLevel::IMPORTANT, "*** USING FILE-SYSTEM DRIVER: %s", bootfstype.c_str());
-	
+
 	if (!usr->mount(bootfstype, boot_device)) {
 		syslog.message(LogLevel::FATAL, "Unable to mount root filesystem");
 		arch_abort();
 	}
-	
+
 	if (!launch_process(init_program, "")) {
 		syslog.messagef(LogLevel::FATAL, "Unable to launch init=%s", init_program);
 		arch_abort();
 	}
-	
+
 	resync_tod();
 	print_tod();
 }
@@ -172,9 +172,9 @@ bool Kernel::early_init(const char* cmdline)
 void Kernel::update_runtime(Nanoseconds ticks)
 {
 	_runtime += ticks;
-	
+
 	_ticks_since_last_tod_update += ticks;
-	
+
 	while (_ticks_since_last_tod_update > Nanoseconds(1e9)) {
 		_ticks_since_last_tod_update -= Nanoseconds(1e9);
 		increment_tod();
@@ -196,17 +196,17 @@ void Kernel::initialise_tod()
 void Kernel::resync_tod()
 {
 	_ticks_since_last_tod_update = 0;
-	
+
 	infos::drivers::timer::RTC *rtc;
-	
+
 	if (!sys.device_manager().try_get_device_by_class<infos::drivers::timer::RTC>(infos::drivers::timer::RTC::RTCDeviceClass, rtc)) {
-		syslog.messagef(LogLevel::WARNING, "No RTC available to synchronise TOD");		
+		syslog.messagef(LogLevel::WARNING, "No RTC available to synchronise TOD");
 		return;
 	}
-	
+
 	infos::drivers::timer::RTCTimePoint tp;
 	rtc->read_timepoint(tp);
-	
+
 	_tod.day = tp.day_of_month;
 	_tod.hours = tp.hours;
 	_tod.minutes = tp.minutes;
@@ -226,7 +226,7 @@ void Kernel::increment_tod()
 			_tod.hours++;
 			if (_tod.hours > 23) {
 				_tod.hours = 0;
-				
+
 				// oh no!
 			}
 		}
@@ -246,25 +246,25 @@ Process *Kernel::launch_process(const String& path, const String& cmdline)
 		syslog.message(LogLevel::ERROR, "Process not found");
 		return NULL;
 	}
-		
+
 	uint8_t hdr[16];
 	image->read(hdr, sizeof(hdr));
-	
+
 	if (hdr[0] == 0x7f && hdr[1] == 'E' && hdr[2] == 'L' && hdr[3] == 'F') {
 		exec::ElfLoader *loader = new exec::ElfLoader(*image);
 		Process *np = loader->load(cmdline);
 		if (!np) {
 			delete loader;
 			delete image;
-			
+
 			return NULL;
 		}
-		
+
 		syslog.messagef(LogLevel::DEBUG, "Starting process... %p", np->main_thread().context().native_context->rdi);
 		np->start();
 		delete loader;
 		delete image;
-		
+
 		return np;
 	} else {
 		delete image;
@@ -281,7 +281,7 @@ void Kernel::spin_delay(util::Nanoseconds ns)
 void Kernel::dump_partitions()
 {
 	syslog.message(LogLevel::INFO, "Available partitions:");
-	
+
 	for (auto device : device_manager().devices()) {
 		if (device.value->device_class().is(infos::drivers::block::BlockDevice::BlockDeviceClass)) {
 			syslog.messagef(LogLevel::INFO, "  %s", device.value->name().c_str());
