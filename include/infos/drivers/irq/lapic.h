@@ -9,6 +9,11 @@ namespace infos
 {
 	namespace drivers
 	{
+		namespace timer
+		{
+			class LAPICTimer;
+		}
+
 		namespace irq
 		{
 			namespace LAPICRegisters {
@@ -45,9 +50,11 @@ namespace infos
 					TDCR = 0x03E0, // Timer Divide Configuration
 				};
 			}
-			
+
 			class LAPIC : public Device
 			{
+				friend class timer::LAPICTimer;
+
 			public:
 				enum LVTs
 				{
@@ -57,46 +64,46 @@ namespace infos
 					LINT1,
 					Error,
 				};
-				
+
 				static const DeviceClass LAPICDeviceClass;
 				const DeviceClass& device_class() const override { return LAPICDeviceClass; }
-				
+
 				LAPIC(virt_addr_t base_address);
-				
+
 				bool init(kernel::DeviceManager& dm) override;
-				
+
 				void mask_interrupts(LVTs lvt);
 				void unmask_interrupts(LVTs lvt);
-				
+
 				void eoi();
-				
+
 				void set_timer_divide(uint8_t v);
 				void set_timer_initial_count(uint32_t v);
 				void set_timer_periodic();
 				void set_timer_one_shot();
 				uint32_t get_timer_current_count();
-				
+
 				kernel::IRQ& timer_irq() const { return *_timer_irq; }
-								
+
 			private:
 				class LAPICIRQ : public kernel::IRQ
 				{
 				public:
 					LAPICIRQ(LAPIC& lapic, LVTs lvt) : _lapic(lapic), _lvt(lvt) { }
-					
+
 					void enable() override;
 					void disable() override;
 					void handle() const override;
-					
+
 				private:
 					LAPIC& _lapic;
 					LVTs _lvt;
 				};
-				
+
 				LAPICIRQ *_timer_irq;
-				
+
 				void set_timer_irq(uint8_t irq);
-				
+
 				volatile uint32_t *_apic_base;
 				inline void write(LAPICRegisters::LAPICRegisters reg, uint32_t value) {
 					_apic_base[reg >> 2] = value;
@@ -108,13 +115,13 @@ namespace infos
 					__sync_synchronize();
 					return _apic_base[reg >> 2];
 				}
-				
+
 				inline void set_flag(LAPICRegisters::LAPICRegisters reg, uint32_t value)
 				{
 					uint32_t oldval = read(reg);
 					write(reg, oldval | value);
 				}
-				
+
 				inline void clear_flag(LAPICRegisters::LAPICRegisters reg, uint32_t value)
 				{
 					uint32_t oldval = read(reg);
