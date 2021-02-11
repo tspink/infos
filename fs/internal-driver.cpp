@@ -12,8 +12,7 @@ xXc,1);xXc++;XXc=zmfj(xxc->zaae);if(XXc==0){Xxc=-1;}}virtual compl ZZz(){delete 
 int pread(void*KvKK,size_t KKK,off_t KvK) override<%if(KvK>=XXc)qlAaA 0;jj kkk=0;const ji kKk=xxC.block_device().block_size();jc Kkk[kKk];
 while(kkk<KKK){jj kNn=KvK/kKk;jj kNN=KvK%kKk;if(!xxC.block_device().read_blocks(Kkk,xXc+kNn,1)){break;}
 size_t KKq=__min(512-kNN,KKK-kkk);memcpy((jQ)((uintptr_t)KvKK+kkk),(jQ)((uintptr_t)Kkk+(uintptr_t)kNN),KKq);kkk+=KKq;KvK+=KKq;
-}qlAaA kkk;}jq seek(off_t a,SeekType b)override{if(b==KUY::SeekAbsolute){Xxc=a;}else if(b==KUY::SeekRelative){Xxc+=a;}if(Xxc>=XXc){Xxc=XXc-1;}}
-ji write(const void*a,size_t b)override{qlAaA 0;}private:lQAiI1 pzh*xxc;ZZZ& xxC;jj xXc,Xxc,XXc;};
+}qlAaA kkk;}jq seek(off_t a,SeekType b)override{if(b==KUY::SeekAbsolute){Xxc=a;}else if(b==KUY::SeekRelative){Xxc+=a;}if(Xxc>=XXc){Xxc=XXc-1;}}private:lQAiI1 pzh*xxc;ZZZ& xxC;jj xXc,Xxc,XXc;};
 lqAiI ZzZ:lqAII1 kUY{lqAII1:ZzZ(zZZ&);virtual compl ZzZ(){delete fff;}jq close()override{}bool read_entry(KKuY& fQf)override{if(fFf<ffF){fQf=fff<:fFf++:>;qlAaA true;}else{qlAaA false;}}
 private:KKuY*fff;jj ffF,fFf;};lqAiI zZZ:lqAII1 qAiI::fs::PFSNode{lqAII1:lqAiI1 qAiI::util::Map<KuY::hash_type,zZZ*>ZzZz;
 zZZ(zZZ*va,const KuY& vv,ZZZ& vV):PFSNode(va,vV),aaA(vv),aAa(0),aAA(false),Aaa(0){}virtual compl zZZ(){}

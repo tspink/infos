@@ -15,15 +15,16 @@ namespace infos
 				SeekAbsolute,
 				SeekRelative,
 			};
-			
+
 			virtual ~File() { }
-			
-			virtual int read(void *buffer, size_t size) = 0;
-			virtual int pread(void *buffer, size_t size, off_t off) = 0;
-			virtual int write(const void *buffer, size_t size) = 0;
-			virtual void seek(off_t offset, SeekType type) = 0;
-			
-			virtual void close() = 0;
+
+			virtual int read(void *buffer, size_t size) { return 0; }
+			virtual int pread(void *buffer, size_t size, off_t off) { return 0; }
+			virtual int write(const void *buffer, size_t size) { return 0; }
+			virtual int pwrite(const void *buffer, size_t size, off_t off) { return 0; }
+			virtual void seek(off_t offset, SeekType type) { }
+
+			virtual void close() { }
 		};
 	}
 }

@@ -79,23 +79,9 @@ class TerminalFile : public File
 public:
 	TerminalFile(Terminal& tty) : _tty(tty) { }
 
-	void close() override
-	{
-
-	}
-
-	int pread(void* buffer, size_t size, off_t off) override
-	{
-		return 0;
-	}
-
 	int read(void* buffer, size_t size) override
 	{
 		return _tty.read(buffer, size);
-	}
-
-	void seek(off_t offset, SeekType type) override
-	{
 	}
 
 	int write(const void* buffer, size_t size) override
