@@ -31,6 +31,8 @@ namespace infos {
 
 			static unsigned int sys_read(ObjectHandle h, uintptr_t buffer, size_t size);
 			static unsigned int sys_write(ObjectHandle h, uintptr_t buffer, size_t size);
+			static unsigned int sys_pread(ObjectHandle h, uintptr_t buffer, size_t size, off_t off);
+			static unsigned int sys_pwrite(ObjectHandle h, uintptr_t buffer, size_t size, off_t off);
 
 			static ObjectHandle sys_opendir(uintptr_t path, uint32_t flags);
 			static unsigned int sys_readdir(ObjectHandle h, uintptr_t buffer);
