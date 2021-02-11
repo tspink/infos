@@ -47,6 +47,7 @@ namespace infos {
 			static unsigned long sys_usleep(unsigned long us);
 			static unsigned int sys_get_tod(uintptr_t tpstruct);
 			static void sys_set_thread_name(ObjectHandle thr, uintptr_t name);
+			static unsigned long sys_get_ticks();
 
 			static void RegisterDefaultSyscalls(SyscallManager& mgr);
 		};

@@ -74,6 +74,7 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 	mgr.RegisterSyscall(15, (SyscallManager::syscallfn) DefaultSyscalls::sys_usleep);
 	mgr.RegisterSyscall(16, (SyscallManager::syscallfn) DefaultSyscalls::sys_get_tod);
 	mgr.RegisterSyscall(17, (SyscallManager::syscallfn) DefaultSyscalls::sys_set_thread_name);
+	mgr.RegisterSyscall(18, (SyscallManager::syscallfn) DefaultSyscalls::sys_get_ticks);
 }
 
 void DefaultSyscalls::sys_nop()
@@ -293,4 +294,9 @@ void DefaultSyscalls::sys_set_thread_name(ObjectHandle h, uintptr_t name)
 	}
 
 	t->name((const char *)name);
+}
+
+unsigned long DefaultSyscalls::sys_get_ticks()
+{
+	return sys.runtime()._val.count();
 }
