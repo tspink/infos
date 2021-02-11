@@ -56,13 +56,9 @@ lapic_fast_calibrate:
     test $0x20, %al
     jz 1b
 
-    in $0x61, %al
-    and $0x0c, %eax
-    out %al, $0x61
-
     // Stop LAPIC
-    mov %esi, 0x320(%rdi)
     mov 0x390(%rdi), %eax
+    mov %esi, 0x320(%rdi)
 
     ret
 .size lapic_fast_calibrate,.-lapic_fast_calibrate
