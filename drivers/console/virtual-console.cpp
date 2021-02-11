@@ -2,10 +2,10 @@
 
 /*
  * drivers/console/virtual-console.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <infos/drivers/console/virtual-console.h>
@@ -23,7 +23,7 @@ const DeviceClass VirtualConsole::VirtualConsoleDeviceClass(Console::ConsoleDevi
 VirtualConsole::VirtualConsole() : _current_mod_mask(None), _current_pos(0), _buffer(NULL), _ucb(NULL)
 {
 	_buffer = new uint16_t[_width * _height];
-	
+
 	for (int i = 0; i < _width * _height; i++) {
 		_buffer[i] = 0x0700;
 	}
@@ -47,7 +47,7 @@ void VirtualConsole::key_up(Keys::Keys key)
 	case Keys::KEY_RSHIFT:
 		_current_mod_mask = _current_mod_mask & ~Shift;
 		return;
-		
+
 	default:
 		break;
 	}
@@ -84,7 +84,7 @@ void VirtualConsole::key_down(Keys::Keys key)
 	KEY_MAPPING(KEY_X, 'X', 'x');
 	KEY_MAPPING(KEY_Y, 'Y', 'y');
 	KEY_MAPPING(KEY_Z, 'Z', 'z');
-	
+
 	KEY_MAPPING(KEY_0, ')', '0');
 	KEY_MAPPING(KEY_1, '!', '1');
 	KEY_MAPPING(KEY_2, '"', '2');
@@ -95,35 +95,35 @@ void VirtualConsole::key_down(Keys::Keys key)
 	KEY_MAPPING(KEY_7, '&', '7');
 	KEY_MAPPING(KEY_8, '*', '8');
 	KEY_MAPPING(KEY_9, '(', '9');
-	
+
 	KEY_MAPPING(KEY_HYPHEN, '_', '-');
 	KEY_MAPPING(KEY_EQUALS, '+', '=');
 	KEY_MAPPING(KEY_BACKSLASH, '|', '\\');
 	KEY_MAPPING(KEY_FORSLASH, '?', '/');
-	
+
 	KEY_MAPPING(KEY_DOT, '>', '.');
-	
+
 	case Keys::KEY_SPACE:
 		ch = ' ';
 		break;
-	
+
 	case Keys::KEY_RETURN:
 		ch = '\n';
 		break;
-	
+
 	case Keys::KEY_BACKSPACE:
 		ch = '\b';
 		break;
-		
+
 	case Keys::KEY_LSHIFT:
 	case Keys::KEY_RSHIFT:
 		_current_mod_mask = _current_mod_mask | Shift;
 		return;
-		
+
 	default:
 		return;
 	}
-	
+
 	_terminal->append_to_read_buffer(ch);
 }
 
@@ -131,26 +131,20 @@ int VirtualConsole::write(const void* buffer, size_t size)
 {
 	if (!_buffer)
 		return 0;
-	
+
 	int attr = 0x0700;
 	int state = 0;
 	for (unsigned int i = 0; i < size; i++) {
 		char c = ((uint8_t *)buffer)[i];
-		
+
 		if (state == 1) {
-			if (c == '[') {
-				state = 2;
-			} else {
-				state = 0;
-			}
-		} else if (state == 2) {
-			attr = 0x0100;
+			attr = (int)c << 8;
 			state = 0;
-		}
-		
-		if (state == 0) {
+		} else if (state == 0) {
 			if (c == '\n') {
 				_current_pos += _width - (_current_pos % _width);
+			} else if (c == '\r') {
+				_current_pos -= (_current_pos % _width);
 			} else if (c == '\33') {
 				state = 1;
 			} else if (c == '\b') {
@@ -160,25 +154,25 @@ int VirtualConsole::write(const void* buffer, size_t size)
 				_buffer[_current_pos] = attr | c;
 				_current_pos++;
 			}
-			
+
 			if (_current_pos >= _width * _height) {
 				scroll_one_line();
 				_current_pos = _width * (_height - 1);
 			}
 		}
 	}
-	
+
 	if (_ucb) {
 		_ucb(*this);
 	}
-	
+
 	return size;
 }
 
 void VirtualConsole::scroll_one_line()
 {
 	memcpy(_buffer, &_buffer[_width], _width * (_height - 1) * 2);
-	
+
 	for (int x = 0; x < _width; x++) {
 		_buffer[x + (_width * (_height - 1))] = 0x0700;
 	}
