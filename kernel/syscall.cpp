@@ -78,6 +78,8 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 
 	mgr.RegisterSyscall(19, (SyscallManager::syscallfn) DefaultSyscalls::sys_pread);
 	mgr.RegisterSyscall(20, (SyscallManager::syscallfn) DefaultSyscalls::sys_pwrite);
+
+	mgr.RegisterSyscall(21, (SyscallManager::syscallfn) DefaultSyscalls::sys_mmap);
 }
 
 void DefaultSyscalls::sys_nop()
@@ -324,4 +326,19 @@ void DefaultSyscalls::sys_set_thread_name(ObjectHandle h, uintptr_t name)
 unsigned long DefaultSyscalls::sys_get_ticks()
 {
 	return sys.runtime().time_since_epoch().count();
+}
+
+virt_addr_t DefaultSyscalls::sys_mmap(phys_addr_t addr, size_t len, uint32_t flags, ObjectHandle fd, off_t offset)
+{
+    // TODO: Implement mmap for dynamic memory allocation
+    auto& t = Thread::current();
+	File *f = (File *) sys.object_manager().get_object_secure(t, fd);
+	if (!f) {
+		return -1;
+	}
+    not_implemented();
+
+    auto &process = t.owner();
+
+	return f->mmap(process.vma(), addr, len, offset);
 }
