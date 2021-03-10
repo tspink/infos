@@ -13,6 +13,7 @@
 #include <arch/x86/msr.h>
 #include <arch/x86/cpuid.h>
 #include <arch/x86/acpi/acpi.h>
+#include <arch/x86/vbe.h>
 
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
@@ -234,6 +235,12 @@ bool infos::arch::x86::devices_init()
  */
 bool infos::arch::x86::graphics_init()
 {
+    syslog.messagef(LogLevel::INFO, "registering video devices...");
+    syslog.messagef(LogLevel::DEBUG, "VBE mode: %p", multiboot_info_structure->vbe_mode);
+    syslog.messagef(LogLevel::DEBUG, "VBE protected mode interface segment: %p", multiboot_info_structure->vbe_interface_seg);
+    syslog.messagef(LogLevel::DEBUG, "VBE protected mode interface offset: %p", multiboot_info_structure->vbe_interface_off);
+    syslog.messagef(LogLevel::DEBUG, "VBE framebuffer: %p", multiboot_info_structure->framebuffer_addr);
+    syslog.messagef(LogLevel::DEBUG, "MB framebuffer type: %p", multiboot_info_structure->framebuffer_type);
     // Create a new VGA graphics device, and register it with the system.
     if (multiboot_info_structure->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_RGB ||
         multiboot_info_structure->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT)

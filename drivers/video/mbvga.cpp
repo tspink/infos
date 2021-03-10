@@ -22,6 +22,18 @@ MBVGADevice::MBVGADevice(phys_addr_t addr, uint32_t pitch, uint32_t width, uint3
     mbvga_log.messagef(LogLevel::DEBUG, "MBVGA framebuffer pitch: %u", pitch);
     mbvga_log.messagef(LogLevel::DEBUG, "MBVGA framebuffer width: %u", width);
     mbvga_log.messagef(LogLevel::DEBUG, "MBVGA framebuffer height: %u", height);
+    uint32_t bytes_per_pixel = _framebuffer_pitch / _framebuffer_width;
+    while (true) {
+        for (uint32_t channel = 0; channel < 3; channel++) {
+            for (uint32_t val = 0; val < 0xff; val++) {
+                uint32_t pix_val = val << (channel * 8);
+                for (uint32_t pixel = 0; pixel < pitch * height; pixel += bytes_per_pixel) {
+                    *(uint32_t *)(pa_to_vpa(_framebuffer_address) + pixel) = pix_val;
+                }
+            }
+        }
+    }
+    util::memset((void *)pa_to_vpa(_framebuffer_address), 0xff, pitch * height);
 }
 
 const DeviceClass MBVGADevice::MBVGADeviceClass(MBVGADevice::MBVGADeviceClass, "video");

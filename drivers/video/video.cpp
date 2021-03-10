@@ -23,6 +23,8 @@ public:
 
     int write(const void* buffer, size_t size) override { return 0; }
 
+    // TODO: Implement mmap
+
 private:
     VideoDevice& _device;
 };

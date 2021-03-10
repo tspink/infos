@@ -57,6 +57,12 @@ namespace infos {
                 char reserved[222];
                 char oem_data[256];
             } __attribute__ ((packed));
+
+            struct vbe2_pmi_table {
+                uint16_t set_window;
+                uint16_t set_display_start;
+                uint16_t set_pallette;
+            } __attribute__ ((packed));
         }
     }
 }

@@ -59,14 +59,17 @@ X86Arch::X86Arch()
 
 bool X86Arch::init()
 {
+    x86_log.message(LogLevel::DEBUG, "Initialising GDT");
 	if (!gdt.init()) {
 		return false;
 	}
 
+    x86_log.message(LogLevel::DEBUG, "Initialising IDT");
 	if (!idt.init()) {
 		return false;
 	}
 
+    x86_log.message(LogLevel::DEBUG, "Initialising TSS");
 	if (!tss.init(0x28)) {
 		return false;
 	}
