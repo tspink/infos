@@ -363,7 +363,8 @@ virt_addr_t DefaultSyscalls::sys_mmap(virt_addr_t addr, size_t len, int flags, O
 
 	// Handle MMAP_ANON
 	if (flags == -1) {
-		return process_vma.allocate_virt(addr, nr_pages);
+		if (!process_vma.allocate_virt(addr, nr_pages)) { return -1; }
+		return addr;
 	}
 
 	// Use MMAP_FILE (bit 0) to indicate a desire to map a file
@@ -373,7 +374,8 @@ virt_addr_t DefaultSyscalls::sys_mmap(virt_addr_t addr, size_t len, int flags, O
 
 		// Optional TODO: Implement file mapping for normal files
 		// Note: Cannot implement mmap() for block devices as `internal-driver.cpp` is obfuscated
-		return f->mmap(process_vma, addr, len, offset);
+		if (!f->mmap(process_vma, addr, len, offset)) { return -1; }
+		return addr;
 	}
 
 	// Invalid flags

@@ -26,7 +26,7 @@ namespace infos
 			virtual int pwrite(const void *buffer, size_t size, off_t off) { return 0; }
 			virtual void seek(off_t offset, SeekType type) { }
 
-			virtual virt_addr_t mmap(mm::VMA& vma, virt_addr_t addr, size_t len, off_t offset) { return -1; }
+			virtual bool mmap(mm::VMA& vma, virt_addr_t addr, size_t len, off_t offset) { return -1; }
 
 			virtual void close() { }
 		};
