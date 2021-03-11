@@ -328,6 +328,21 @@ unsigned long DefaultSyscalls::sys_get_ticks()
 	return sys.runtime().time_since_epoch().count();
 }
 
+<<<<<<< HEAD
+virt_addr_t DefaultSyscalls::sys_mmap(phys_addr_t addr, size_t len, uint32_t flags, ObjectHandle fd, off_t offset)
+{
+    // TODO: Implement mmap for dynamic memory allocation
+    auto& t = Thread::current();
+	File *f = (File *) sys.object_manager().get_object_secure(t, fd);
+	if (!f) {
+		return -1;
+	}
+    not_implemented();
+
+    auto &process = t.owner();
+
+	return f->mmap(process.vma(), addr, len, offset);
+=======
 /**
  * The mmap() system call causes the pages starting at addr and continuing for at most len bytes to be mapped from the object described by
  * fd, starting at byte offset offset.	If offset or len is not a multiple of the pagesize, the mapped region may extend past the specified
@@ -380,4 +395,5 @@ virt_addr_t DefaultSyscalls::sys_mmap(virt_addr_t addr, size_t len, int flags, O
 
 	// Invalid flags
 	return -1;
+>>>>>>> kai/mmap-syscall
 }

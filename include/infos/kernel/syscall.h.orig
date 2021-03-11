@@ -51,7 +51,11 @@ namespace infos {
 			static void sys_set_thread_name(ObjectHandle thr, uintptr_t name);
 			static unsigned long sys_get_ticks();
 
+<<<<<<< HEAD
+            static virt_addr_t sys_mmap(phys_addr_t addr, size_t len, uint32_t flags, ObjectHandle fd, off_t offset);
+=======
 			static virt_addr_t sys_mmap(virt_addr_t addr, size_t len, int flags, ObjectHandle fd, off_t offset);
+>>>>>>> kai/mmap-syscall
 
 			static void RegisterDefaultSyscalls(SyscallManager& mgr);
 		};

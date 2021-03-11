@@ -59,17 +59,29 @@ X86Arch::X86Arch()
 
 bool X86Arch::init()
 {
+<<<<<<< HEAD
+    x86_log.message(LogLevel::DEBUG, "Initialising GDT");
+=======
 	x86_log.message(LogLevel::INFO, "Initilising GDT");
+>>>>>>> kai/mmap-syscall
 	if (!gdt.init()) {
 		return false;
 	}
 
+<<<<<<< HEAD
+    x86_log.message(LogLevel::DEBUG, "Initialising IDT");
+=======
 	x86_log.message(LogLevel::INFO, "Initilising IDT");
+>>>>>>> kai/mmap-syscall
 	if (!idt.init()) {
 		return false;
 	}
 
+<<<<<<< HEAD
+    x86_log.message(LogLevel::DEBUG, "Initialising TSS");
+=======
 	x86_log.message(LogLevel::INFO, "Initilising TSS");
+>>>>>>> kai/mmap-syscall
 	if (!tss.init(0x28)) {
 		return false;
 	}
