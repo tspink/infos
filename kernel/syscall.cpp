@@ -8,6 +8,7 @@
  *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
+#include "infos/define.h"
 #include <infos/kernel/syscall.h>
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/om.h>
@@ -354,6 +355,9 @@ virt_addr_t DefaultSyscalls::sys_mmap(virt_addr_t addr, size_t len, int flags, O
 	if (len == 0) {
 		return -1;
 	}
+
+    // Align address to page base
+    addr = __page_base(addr);
 
 	// Check if range is already mapped
 	for (unsigned int page = 0; page < nr_pages; page++) {
