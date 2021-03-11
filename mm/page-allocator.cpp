@@ -8,6 +8,7 @@
  * 
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
+#include <arch/x86/multiboot.h>
 #include <infos/mm/page-allocator.h>
 #include <infos/mm/mm.h>
 #include <infos/util/string.h>
@@ -108,6 +109,10 @@ bool PageAllocator::init()
 
 	// Reserve initial page table pages
 	nr_free_pages -= mark_page_range(PageDescriptorType::ALLOCATED, 1, 6);
+
+	// Reseve multiboot_info_structure data
+	pfn_t multiboot_info_start_pfn = pa_to_pfn((phys_addr_t)kva_to_pa((virt_addr_t)arch::x86::multiboot_info_structure));
+	nr_free_pages -= mark_page_range(PageDescriptorType::RESERVED, multiboot_info_start_pfn, 1);
 
 	// Now, reserve the kernel's pages
 
