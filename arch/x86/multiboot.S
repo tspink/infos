@@ -10,8 +10,8 @@
  */
 #define STACK_SIZE				4096
 
-#define MULTIBOOT_HEADER_MAGIC  0x1BADB002
-#define MULTIBOOT_HEADER_FLAGS  0x00000007
+#define MULTIBOOT_HEADER_MAGIC	0x1BADB002
+#define MULTIBOOT_HEADER_FLAGS	0x00000007
 
 .section .multiboot.header, "a"
 
@@ -22,22 +22,22 @@
 
 .type multiboot_header, %object
 multiboot_header:
-    .long MULTIBOOT_HEADER_MAGIC
-    .long MULTIBOOT_HEADER_FLAGS
-    .long -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
+	.long MULTIBOOT_HEADER_MAGIC
+	.long MULTIBOOT_HEADER_FLAGS
+	.long -(MULTIBOOT_HEADER_MAGIC + MULTIBOOT_HEADER_FLAGS)
 
-    // for MULTIBOOT_MEMORY_INFO
-    .long 0x00000000    // header_addr
-    .long 0x00000000    // load_addr
-    .long 0x00000000    // load_end_addr
-    .long 0x00000000    // bss_end_addr
-    .long 0x00000000    // entry_addr
+	// for MULTIBOOT_MEMORY_INFO
+	.long 0x00000000	// header_addr
+	.long 0x00000000	// load_addr
+	.long 0x00000000	// load_end_addr
+	.long 0x00000000	// bss_end_addr
+	.long 0x00000000	// entry_addr
 
-    // for MULTIBOOT_VIDEO_MODE
-    .long 0x00000000    // mode_type
-    .long 1280          // width
-    .long 768           // height
-    .long 32            // depth
+	// for MULTIBOOT_VIDEO_MODE
+	.long 0x00000000	// mode_type
+	.long 1280			// width
+	.long 768			// height
+	.long 32			// depth
 
 .size multiboot_header,.-multiboot_header
 
