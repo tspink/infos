@@ -77,9 +77,6 @@ static bool reinitialise_pgt()
 	// The PML4 will be the first page.
 	uint64_t *pml4 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[0]);
 	
-	// Zero all the pages.
-	bzero(pml4, (1 << 4) * 0x1000);
-	
 	x86_log.messagef(LogLevel::DEBUG, "Kernel page tables @ %p", pml4);
 
 	// Populate some local variables that will make working with the various

@@ -132,10 +132,10 @@ Process* ElfLoader::load(const String& cmdline)
 		}
 	}
 	
-	np->main_thread().allocate_user_stack(0x100000, 0x2000);
+	np->main_thread().allocate_user_stack(0xffffd000, 0x2000);
 
 	if (cmdline.length() > 0) {
-		virt_addr_t cmdline_start = 0x102000;
+		virt_addr_t cmdline_start = 0xfffff000;
 		np->vma().allocate_virt(cmdline_start, 1);
 		
 		if (!np->vma().copy_to(cmdline_start, cmdline.c_str(), cmdline.length())) {

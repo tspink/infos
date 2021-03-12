@@ -51,6 +51,8 @@ namespace infos {
 			static void sys_set_thread_name(ObjectHandle thr, uintptr_t name);
 			static unsigned long sys_get_ticks();
 
+			static virt_addr_t sys_mmap(virt_addr_t addr, size_t len, int flags, ObjectHandle fd, off_t offset);
+
 			static void RegisterDefaultSyscalls(SyscallManager& mgr);
 		};
 	}

@@ -13,6 +13,7 @@
 #include <arch/x86/msr.h>
 #include <arch/x86/cpuid.h>
 #include <arch/x86/acpi/acpi.h>
+#include <arch/x86/vbe.h>
 
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
@@ -20,6 +21,7 @@
 #include <infos/drivers/console/virtual-console.h>
 #include <infos/drivers/terminal/terminal.h>
 #include <infos/drivers/video/vga-console.h>
+#include <infos/drivers/video/mbvga.h>
 #include <infos/drivers/input/keyboard.h>
 #include <infos/drivers/timer/lapic-timer.h>
 #include <infos/drivers/timer/pit.h>
@@ -99,7 +101,7 @@ bool infos::arch::x86::timer_init()
 	if (!sys.device_manager().register_device(*pit))
 		return false;
 	
-	// Finally, create a register the LAPIC timer.  The LAPIC timer will
+	// Finally, create a register the LAPIC timer.	The LAPIC timer will
 	// calibrate itself as part of its initialisation, and so the PIT
 	// must be registered beforehand.
 	LAPICTimer *lapic_timer = new LAPICTimer();
@@ -124,17 +126,20 @@ bool infos::arch::x86::console_init()
 {
 	// Create a new VGA console device (which will be the /physical/ console), and
 	// register it with the system.
-	if (!sys.device_manager().register_device(*new VGAConsoleDevice(pa_to_vpa(0xb8000))))
+	if (!sys.device_manager().register_device(*new VGAConsoleDevice()))
 		return false;
 	
+	syslog.messagef(LogLevel::INFO, "registering additional devices...");
 	// Create and register a keyboard device.
 	if (!sys.device_manager().register_device(*new Keyboard()))
 		return false;
+	syslog.messagef(LogLevel::INFO, "registering additional devices...");
 
 	// Create a terminal that will be associated with the virtual console.
 	Terminal *tty0 = new Terminal();	
 	if (!sys.device_manager().register_device(*tty0))
 		return false;
+	syslog.messagef(LogLevel::INFO, "registering additional devices...");
 
 	// Add an alias to the TTY device called 'console'.
 	if (!sys.device_manager().add_device_alias("console", *tty0))
@@ -224,5 +229,33 @@ bool infos::arch::x86::devices_init()
 		devices++;
 	}
 	
+	return true;
+}
+
+/**
+ * Initialises the devices necessary for providing a GUI.
+ * @return Returns TRUE if the devices were successfully created and registered.
+ */
+bool infos::arch::x86::graphics_init()
+{
+	syslog.messagef(LogLevel::INFO, "registering video devices...");
+	// Create a new VGA graphics device, and register it with the system.
+	if (!(multiboot_info_structure->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_RGB ||
+		multiboot_info_structure->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT))
+	{
+		syslog.messagef(LogLevel::WARNING, "multiboot framebuffer not initialised, using fallback");
+	}
+	syslog.messagef(LogLevel::INFO, "multiboot RGB/EGA framebuffer detected...");
+	auto mbvga_device = new MBVGADevice(
+		multiboot_info_structure->framebuffer_addr,
+		multiboot_info_structure->framebuffer_pitch,
+		multiboot_info_structure->framebuffer_width,
+		multiboot_info_structure->framebuffer_height
+	);
+
+	if (!sys.device_manager().register_device(*mbvga_device)) {
+			return false;
+	}
+
 	return true;
 }

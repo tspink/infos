@@ -63,6 +63,9 @@ namespace infos
 
 				virtual fs::File *open_as_file() override;
 
+				int width() const { return _width; }
+				int height() const { return _height; }
+
 			private:
 				enum KeyboardModifiers
 				{

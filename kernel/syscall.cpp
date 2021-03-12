@@ -78,6 +78,8 @@ void DefaultSyscalls::RegisterDefaultSyscalls(SyscallManager& mgr)
 
 	mgr.RegisterSyscall(19, (SyscallManager::syscallfn) DefaultSyscalls::sys_pread);
 	mgr.RegisterSyscall(20, (SyscallManager::syscallfn) DefaultSyscalls::sys_pwrite);
+
+	mgr.RegisterSyscall(21, (SyscallManager::syscallfn) DefaultSyscalls::sys_mmap);
 }
 
 void DefaultSyscalls::sys_nop()
@@ -324,4 +326,61 @@ void DefaultSyscalls::sys_set_thread_name(ObjectHandle h, uintptr_t name)
 unsigned long DefaultSyscalls::sys_get_ticks()
 {
 	return sys.runtime().time_since_epoch().count();
+}
+
+/**
+ * The mmap() system call causes the pages starting at addr and continuing for at most len bytes to be mapped from the object described by
+ * fd, starting at byte offset offset.	If offset or len is not a multiple of the pagesize, the mapped region may extend past the specified
+ * range.  Any extension beyond the end of the mapped object will be zero-filled.
+ *
+ * @param addr The location where the new page should map to.
+ * @param len The size of the memory desired in bytes.
+ * @param flags Flags to pass to mmap, MMAP_FILE (1) will map a file handle, MMAP_ANON (-1) will map anonymous memory.
+ * @param fd The file handle to map, ignored if MMAP_FILE is not set.
+ * @param offset The offset in the file to start mapping from, ignored if MMAP_ANON is set
+ *
+ * @return Returns the address of the mapped memory or -1 if mmap() failed
+ */
+virt_addr_t DefaultSyscalls::sys_mmap(virt_addr_t addr, size_t len, int flags, ObjectHandle fd, off_t offset)
+{
+	// mmap for dynamic userspace memory allocation
+	// return value of -1 indicates failure
+
+	auto& current_thread = Thread::current();
+	auto& process_vma	 = current_thread.owner().vma();
+	auto  nr_pages = __align_up_page(len) >> 12;
+
+	// Cannot allocate zero size
+	if (len == 0) {
+		return -1;
+	}
+
+    // Align address to page base
+    addr = __page_base(addr);
+
+	// Check if range is already mapped
+	for (unsigned int page = 0; page < nr_pages; page++) {
+		virt_addr_t check_addr = addr + (page << 12);
+		if (process_vma.is_mapped(check_addr)) { return -1; }
+	}
+
+	// Handle MMAP_ANON
+	if (flags == -1) {
+		if (!process_vma.allocate_virt(addr, nr_pages)) { return -1; }
+		return addr;
+	}
+
+	// Use MMAP_FILE (bit 0) to indicate a desire to map a file
+	if (flags & 1) {
+		File *f = (File *) sys.object_manager().get_object_secure(current_thread, fd);
+		if (!f) { return -1; }
+
+		// Optional TODO: Implement file mapping for normal files
+		// Note: Cannot implement mmap() for block devices as `internal-driver.cpp` is obfuscated
+		if (!f->mmap(process_vma, addr, len, offset)) { return -1; }
+		return addr;
+	}
+
+	// Invalid flags
+	return -1;
 }
