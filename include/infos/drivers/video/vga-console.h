@@ -29,7 +29,7 @@ namespace infos
 				static const DeviceClass VGAConsoleDeviceClass;
 				const DeviceClass& device_class() const override { return VGAConsoleDeviceClass; }
 				
-				VGAConsoleDevice(phys_addr_t video_ram_address);
+				VGAConsoleDevice();
 				virtual ~VGAConsoleDevice();
 				
 				bool supports_colour() const override { return true; }
@@ -38,7 +38,7 @@ namespace infos
 				void virtual_console_changed() override;
 
 			private:
-				phys_addr_t _video_ram_address;
+				uint16_t *_video_ram_address;
 				
 				uint16_t *_backup_buffer;
 				console::VirtualConsole *_old_vc;

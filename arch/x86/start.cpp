@@ -87,6 +87,11 @@ static void eliminate_lower_mapping()
 static bool x86_init_bottom()
 {
     x86_log.message(LogLevel::DEBUG, "Initialising and activating console");
+    if (!graphics_init()) {
+        syslog.message(LogLevel::ERROR, "Unable to initialise graphics");
+        goto init_error;
+    }
+
     if (!console_init()) {
         syslog.message(LogLevel::ERROR, "Unable to initialise console");
         goto init_error;
@@ -94,11 +99,6 @@ static bool x86_init_bottom()
     
     if (!activate_console()) {
         syslog.message(LogLevel::ERROR, "Unable to activate console");
-        goto init_error;
-    }
-
-    if (!graphics_init()) {
-        syslog.message(LogLevel::ERROR, "Unable to initialise graphics");
         goto init_error;
     }
     

@@ -10,7 +10,7 @@
  */
 #include <infos/kernel/om.h>
 
-#include "infos/kernel/thread.h"
+#include <infos/kernel/thread.h>
 
 using namespace infos::kernel;
 

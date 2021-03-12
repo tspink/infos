@@ -8,7 +8,6 @@
  *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
-#include "infos/define.h"
 #include <infos/kernel/syscall.h>
 #include <infos/kernel/kernel.h>
 #include <infos/kernel/om.h>
