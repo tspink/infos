@@ -5,3 +5,5 @@ out
 run.sh
 oot
 oot/
+compile_commands.json
+.clangd/
