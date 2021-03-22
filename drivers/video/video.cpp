@@ -27,12 +27,13 @@ public:
 	// Use memory mapped IO for framebuffer graphics
 	bool mmap(VMA& vma, virt_addr_t addr, size_t len, off_t offset) override {
 		size_t bytes_to_mmap = __min(len, _device.framebuffer_size_in_bytes());
-		size_t nr_pages      = __align_up_page(bytes_to_mmap);
+		size_t nr_pages      = __align_up_page(bytes_to_mmap) >> __page_bits;
 		auto frame_base = _device.framebuffer();
 
 		// Add mappings
 		for (size_t page = 0; page < nr_pages; page++) {
-			vma.insert_mapping(addr, frame_base + (page << __page_bits), MappingFlags::Present | MappingFlags::User | MappingFlags::Writable);
+            auto addr_offset = page << __page_bits;
+			vma.insert_mapping(addr + addr_offset, frame_base + addr_offset, MappingFlags::Present | MappingFlags::User | MappingFlags::Writable);
 		}
 		return true;
 	}
