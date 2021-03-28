@@ -6,6 +6,7 @@
  * 
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
+#include "infos/define.h"
 #include <infos/fs/exec/elf-loader.h>
 #include <infos/fs/file.h>
 #include <infos/kernel/kernel.h>
@@ -59,6 +60,20 @@ struct ELF64ProgramHeaderEntry
 	uint32_t type, flags;
 	uint64_t offset, vaddr, paddr;
 	uint64_t filesz, memsz, align;
+};
+
+struct ELF64SectionHeaderEntry
+{
+	uint32_t sh_name;
+	uint32_t sh_type;
+	uint64_t sh_flags;
+	uint64_t sh_addr;
+	uint64_t sh_offset;
+	uint64_t sh_size;
+	uint32_t sh_link;
+	uint32_t sh_info;
+	uint64_t sh_addralign;
+	uint64_t sh_entsize;
 };
 
 ElfLoader::ElfLoader(File& f) : _file(f)
@@ -122,13 +137,42 @@ Process* ElfLoader::load(const String& cmdline)
 		
 		if (ent.type == 1) {
 			if (!np->vma().is_mapped(ent.vaddr)) {
-				np->vma().allocate_virt(ent.vaddr, __align_up_page(ent.memsz) >> 12);
+				virt_addr_t base = __page_base(ent.vaddr);
+				size_t size = __page_offset(ent.vaddr) + ent.memsz;
+				np->vma().allocate_virt(base, __align_up_page(size) >> 12);
 			}
 			
 			char *buffer = new char[ent.filesz];
 			_file.pread(buffer, ent.filesz, ent.offset);
 			np->vma().copy_to(ent.vaddr, buffer, ent.filesz);
 			delete buffer;
+		}
+	}
+
+	// Iterate over section headers
+	for(unsigned int i = 0; i < hdr.shnum; i++) {
+		ELF64SectionHeaderEntry section;
+		off_t off = hdr.shoff + (i * hdr.shentsize);
+		if (_file.pread(&section, sizeof(section), off) != sizeof(section)) {
+			delete np;
+			
+			elf_log.message(LogLevel::DEBUG, "Unable to read SH entry");
+			return NULL;
+		}
+ 
+		// SHT_NOBITS
+		if(section.sh_type == 8) {
+			// Skip if it the section is empty
+			if(!section.sh_size) continue;
+			// SHF_ALLOC
+			if(section.sh_flags & 2) {
+				// Allocate and zero some memory
+				if (!np->vma().is_mapped(section.sh_addr)) {
+					virt_addr_t base = __page_base(section.sh_addr);
+					size_t size = __page_offset(section.sh_addr) + section.sh_size;
+					np->vma().allocate_virt(base, __align_up_page(size) >> 12);
+				}
+			}
 		}
 	}
 	
