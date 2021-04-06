@@ -3,6 +3,7 @@
 #pragma once
 
 #include <infos/drivers/device.h>
+#include <infos/fs/file.h>
 
 namespace infos
 {
@@ -134,6 +135,8 @@ namespace infos
 				bool init(kernel::DeviceManager& dm) override;
 				
 				void attach_sink(KeyboardSink& sink) { _sink = &sink; }
+				fs::File *open_as_file() override;
+				int read(void* buffer, size_t size);
 				
 			private:
 				static void keyboard_irq_handler(const kernel::IRQ *irq, void *priv);
@@ -142,6 +145,9 @@ namespace infos
 				
 				kernel::IRQ *_irq;
 				KeyboardSink *_sink;
+				util::Event _keyboard_event;
+				uint8_t _scancode_buffer[64];
+				uint8_t _scancode_buffer_head, _scancode_buffer_tail;
 			};
 		}
 	}

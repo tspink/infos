@@ -21,6 +21,7 @@ using namespace infos::drivers;
 using namespace infos::drivers::input;
 using namespace infos::drivers::irq;
 using namespace infos::arch::x86;
+using namespace infos::fs;
 
 static Keys::Keys scancode_map[] = {
 	Keys::NO_KEY, Keys::KEY_ESCAPE,
@@ -62,7 +63,7 @@ static Keys::Keys scancode_map[] = {
 
 const DeviceClass Keyboard::KeyboardDeviceClass(Device::RootDeviceClass, "kbd");
 
-Keyboard::Keyboard() : _irq(NULL), _sink(NULL)
+Keyboard::Keyboard() : _irq(NULL), _sink(NULL), _scancode_buffer_head(0), _scancode_buffer_tail(0)
 {
 
 }
@@ -101,6 +102,11 @@ bool Keyboard::init(kernel::DeviceManager& dm)
  */
 void Keyboard::handle_key_event(int8_t scancode)
 {
+	// Append to scancode buffer
+	_scancode_buffer[_scancode_buffer_tail++] = scancode;
+	_scancode_buffer_tail %= ARRAY_SIZE(_scancode_buffer);
+	_keyboard_event.trigger();
+
 	// No sink?  Nothing to do.
 	if (_sink == NULL) return;
 	
@@ -144,4 +150,50 @@ void Keyboard::keyboard_irq_handler(const kernel::IRQ *irq, void *priv)
 	
 	// Post the event into the keyboard device.
 	((Keyboard *)priv)->handle_key_event(scancode);
+}
+
+class KeyboardFile : public File
+{
+public:
+	KeyboardFile(Keyboard& keeb) : _keeb(keeb) { }
+
+	int read(void* buffer, size_t size) override
+	{
+		return _keeb.read(buffer, size);
+	}
+
+	int write(const void* buffer, size_t size) override
+	{
+		return 0;
+	}
+
+private:
+	Keyboard& _keeb;
+};
+
+int Keyboard::read(void *raw_buffer, size_t size)
+{
+	if (size == 0) return 0;
+
+	uint8_t *buffer = (uint8_t *)raw_buffer;
+	size_t n = 0;
+	while (n < size) {
+		while (_scancode_buffer_head == _scancode_buffer_tail) {
+			_keyboard_event.wait();
+		}
+
+		uint8_t elem = _scancode_buffer[_scancode_buffer_head];
+
+		_scancode_buffer_head++;
+		_scancode_buffer_head %= ARRAY_SIZE(_scancode_buffer);
+
+		buffer[n++] = elem;
+	}
+
+	return n;
+}
+
+File * Keyboard::open_as_file()
+{
+	return new KeyboardFile(*this);
 }
