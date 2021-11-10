@@ -2,10 +2,10 @@
 
 /*
  * arch/x86/mm.cpp
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #include <arch/x86/init.h>
@@ -40,18 +40,18 @@ static void handle_page_fault(const IRQ *irq, void *priv)
 	// Retrieve the fault_address from the cr2 control register.
 	uint64_t fault_address;
 	asm volatile("mov %%cr2, %0" : "=r"(fault_address));
-	
+
 	if (current_thread == NULL) {
 		// If there is no current_thread, then this page fault happened REALLY
 		// early.  We must abort.
 		syslog.messagef(LogLevel::FATAL, "*** PAGE FAULT @ vaddr=%p", fault_address);
-		
+
 		arch_abort();
 	}
 
 	// If there is a current thread, abort it.
-	syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p", fault_address, current_thread->context().native_context->rip);
-	
+	syslog.messagef(LogLevel::WARNING, "*** PAGE FAULT @ vaddr=%p rip=%p proc=%s", fault_address, current_thread->context().native_context->rip, current_thread->owner().name().c_str());
+
 	// TODO: support passing page-faults into threads.
 	current_thread->owner().terminate(-1);
 }
@@ -73,13 +73,13 @@ static bool reinitialise_pgt()
 		x86_log.message(LogLevel::ERROR, "The page allocator has not worked!");
 		return false;
 	}
-	
+
 	// The PML4 will be the first page.
 	uint64_t *pml4 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[0]);
-	
+
 	// Zero all the pages.
 	bzero(pml4, (1 << 4) * 0x1000);
-	
+
 	x86_log.messagef(LogLevel::DEBUG, "Kernel page tables @ %p", pml4);
 
 	// Populate some local variables that will make working with the various
@@ -94,21 +94,21 @@ static bool reinitialise_pgt()
 	uint64_t *pdp1_pd1 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[6]);
 	uint64_t *pdp1_pd2 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[7]);
 	uint64_t *pdp1_pd3 = (uint64_t *)sys.mm().pgalloc().pgd_to_kva(&pages[8]);
-	
+
 	/*
 	 * PML4 -> pdp{0,1}
-	 * 
+	 *
 	 * PDP0 -> pd{0,1}
 	 * PDP1 -> pd{0,1,2,3}
 	 */
-		
+
 	// Fill in the PML4 and PDPs.
 	pml4[0x1ff] = (kva_to_pa((virt_addr_t)pdp0) & ~0xfff) | 0x003;
 	pml4[0x100] = (kva_to_pa((virt_addr_t)pdp1) & ~0xfff) | 0x003;
-	
+
 	pdp0[0x1fe] = (kva_to_pa((virt_addr_t)pdp0_pd0) & ~0xfff) | 0x003;
 	pdp0[0x1ff] = (kva_to_pa((virt_addr_t)pdp0_pd1) & ~0xfff) | 0x003;
-	
+
 	pdp1[0x000] = (kva_to_pa((virt_addr_t)pdp1_pd0) & ~0xfff) | 0x003;
 	pdp1[0x001] = (kva_to_pa((virt_addr_t)pdp1_pd1) & ~0xfff) | 0x003;
 	pdp1[0x002] = (kva_to_pa((virt_addr_t)pdp1_pd2) & ~0xfff) | 0x003;
@@ -128,28 +128,28 @@ static bool reinitialise_pgt()
 		pdp1_pd0[i] = (addr & ~0xfff) | 0x083;
 		addr += 0x200000;
 	}
-	
+
 	for (unsigned int i = 0; i < 0x200; i++) {
 		pdp1_pd1[i] = (addr & ~0xfff) | 0x083;
 		addr += 0x200000;
 	}
-	
+
 	for (unsigned int i = 0; i < 0x200; i++) {
 		pdp1_pd2[i] = (addr & ~0xfff) | 0x083;
 		addr += 0x200000;
 	}
-	
+
 	for (unsigned int i = 0; i < 0x200; i++) {
 		pdp1_pd3[i] = (addr & ~0xfff) | 0x083;
 		addr += 0x200000;
 	}
-	
+
 	// Welp, here we go.  Reload the page tables
 	asm volatile ("mov %0, %%cr3" :: "r"(kva_to_pa((virt_addr_t)pml4)));
-	
+
 	// Hack in the template
 	__template_pml4 = (uint64_t *)sys.mm().pgalloc().pgd_to_vpa(&pages[0]);
-	
+
 	return true;
 }
 
@@ -164,8 +164,8 @@ bool infos::arch::x86::mm_init()
 
 		if ((entry->len & ~0xfff) != 0) {
 			MemoryType::MemoryType type = MemoryType::NORMAL;
-			
-			switch (entry->type) {				
+
+			switch (entry->type) {
 			case MULTIBOOT_MEMORY_AVAILABLE:
 				type = MemoryType::NORMAL;
 				break;
@@ -176,14 +176,14 @@ bool infos::arch::x86::mm_init()
 				x86_log.messagef(LogLevel::WARNING, "Skipping memory block with unknown type");
 				continue;
 			}
-			
+
 			sys.mm().add_physical_memory(entry->addr, (entry->len >> 12), type);
 		}
 	}
-	
+
 	if (!sys.mm().initialise_allocators())
 		return false;
-	
+
 	return reinitialise_pgt();
 }
 

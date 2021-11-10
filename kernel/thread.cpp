@@ -45,11 +45,12 @@ Thread::Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, threa
 	_context.kernel_stack = (uintptr_t)sys.mm().pgalloc().pgd_to_vpa(kernel_stack_pgd);
 	_context.kernel_stack += KERNEL_STACK_SIZE;
 
-	/*auto xsave_area_pgd = owner.vma().allocate_phys(0);
+	// TODO: Check for XSAVE
+	auto xsave_area_pgd = owner.vma().allocate_phys(0);
 	assert(xsave_area_pgd);
 	_context.xsave_area = (uintptr_t)sys.mm().pgalloc().pgd_to_vpa(xsave_area_pgd);
 
-	bzero((void *)_context.xsave_area, 0x1000);*/
+	bzero((void *)_context.xsave_area, 0x1000);
 
 	// Prepare the initial stack for this thread.  Threads ALWAYS start in kernel mode, irrespective of whether or
 	// not they are user threads.  This stack will set-up the thread context.
