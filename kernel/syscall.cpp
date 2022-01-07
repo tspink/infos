@@ -234,9 +234,9 @@ unsigned int DefaultSyscalls::sys_wait_proc(ObjectHandle h)
 	return 0;
 }
 
-ObjectHandle DefaultSyscalls::sys_create_thread(uintptr_t entry_point, uintptr_t arg)
+ObjectHandle DefaultSyscalls::sys_create_thread(uintptr_t entry_point, uintptr_t arg, SchedulingEntityPriority::SchedulingEntityPriority priority)
 {
-	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point, "other");
+	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point, "other", priority);
 	ObjectHandle h = sys.object_manager().register_object(Thread::current(), &t);
 
 	virt_addr_t stack_addr = 0x7fff00000000;

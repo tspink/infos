@@ -36,7 +36,8 @@ namespace infos
 		public:
 			typedef void (*thread_proc_t)(void *);
 
-			Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, thread_proc_t entry_point, const util::String& name = "?");
+			Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, thread_proc_t entry_point,
+			        const util::String& name = "?", SchedulingEntityPriority::SchedulingEntityPriority priority);
 			virtual ~Thread();
 
 			ThreadPrivilege::ThreadPrivilege privilege() const { return _privilege; }

@@ -28,8 +28,9 @@ namespace infos
 		public:
 			typedef util::Nanoseconds EntityRuntime;
 			typedef util::KernelRuntimeClock::Timepoint EntityStartTime;
-			
-			SchedulingEntity() : _cpu_runtime(0), _exec_start_time(0), _state(SchedulingEntityState::STOPPED) { }
+
+			SchedulingEntity(SchedulingEntityPriority::SchedulingEntityPriority priority) : _cpu_runtime(0),
+			        _exec_start_time(0), _state(SchedulingEntityState::STOPPED), _priority(priority) { }
 			virtual ~SchedulingEntity() { }
 			
 			virtual bool activate(SchedulingEntity *prev) = 0;
@@ -40,7 +41,8 @@ namespace infos
 			void update_exec_start_time(EntityStartTime exec_start_time) { _exec_start_time = exec_start_time; }
 			
 			SchedulingEntityState::SchedulingEntityState state() const { return _state; }
-			
+            SchedulingEntityPriority::SchedulingEntityPriority priority() const { return _priority; }
+
 			bool stopped() const { return _state == SchedulingEntityState::STOPPED; }
 			
 			util::Event& state_changed() { return _state_changed; }

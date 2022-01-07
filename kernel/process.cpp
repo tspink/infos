@@ -47,12 +47,13 @@ void Process::terminate(int rc)
 	}
 }
 
-Thread& Process::create_thread(ThreadPrivilege::ThreadPrivilege privilege, Thread::thread_proc_t entry_point, const util::String& name)
+Thread& Process::create_thread(ThreadPrivilege::ThreadPrivilege privilege, Thread::thread_proc_t entry_point,
+        const util::String& name, SchedulingEntityPriority::SchedulingEntityPriority priority)
 {
 	// A kernel process can NEVER have a user thread.
 	assert(!(kernel_process() && privilege == ThreadPrivilege::User));
 
-	Thread *new_thread = new Thread(*this, privilege, entry_point, name);
+	Thread *new_thread = new Thread(*this, privilege, entry_point, name, priority);
 	_threads.append(new_thread);
 
 	return *new_thread;

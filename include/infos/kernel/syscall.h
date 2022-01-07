@@ -2,6 +2,7 @@
 
 #pragma once
 #include <infos/kernel/om.h>
+#include <infos/kernel/sched-entity.h>
 
 namespace infos {
 	namespace kernel {
@@ -43,7 +44,8 @@ namespace infos {
 			static ObjectHandle sys_exec(uintptr_t program, uintptr_t args);
 			static unsigned int sys_wait_proc(ObjectHandle h);
 
-			static ObjectHandle sys_create_thread(uintptr_t entry_point, uintptr_t arg);
+			static ObjectHandle sys_create_thread(uintptr_t entry_point, uintptr_t arg,
+			        SchedulingEntityPriority::SchedulingEntityPriority priority = SchedulingEntityPriority::NORMAL);
 			static unsigned int sys_stop_thread(ObjectHandle h);
 			static unsigned int sys_join_thread(ObjectHandle h);
 			static unsigned long sys_usleep(unsigned long us);
