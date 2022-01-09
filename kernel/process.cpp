@@ -53,7 +53,7 @@ Thread& Process::create_thread(ThreadPrivilege::ThreadPrivilege privilege, Threa
 	// A kernel process can NEVER have a user thread.
 	assert(!(kernel_process() && privilege == ThreadPrivilege::User));
 
-	Thread *new_thread = new Thread(*this, privilege, entry_point, name, priority);
+	Thread *new_thread = new Thread(*this, privilege, entry_point, priority, name);
 	_threads.append(new_thread);
 
 	return *new_thread;

@@ -22,6 +22,7 @@ using namespace infos::kernel;
 using namespace infos::fs;
 using namespace infos::util;
 
+
 SyscallManager::SyscallManager()
 {
 	for (int i = 0; i < MAX_SYSCALLS; i++) {

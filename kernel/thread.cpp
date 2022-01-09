@@ -27,8 +27,8 @@ using namespace infos::util;
  * Constructs a new thread object.
  */
 Thread::Thread(Process& owner, ThreadPrivilege::ThreadPrivilege privilege, thread_proc_t entry_point,
-        const util::String& name, SchedulingEntityPriority::SchedulingEntityPriority priority)
-	: SchedulingEntity(priority),
+               SchedulingEntityPriority::SchedulingEntityPriority priority, const util::String& name)
+	: SchedulingEntity(priority, name),
 	    _owner(owner),
 		_privilege(privilege),
 		_entry_point(entry_point),
