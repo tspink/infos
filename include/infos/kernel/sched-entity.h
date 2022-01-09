@@ -31,7 +31,6 @@ namespace infos
                 INTERACTIVE,
                 NORMAL,
                 DAEMON,
-                IDLE,
             };
         }
 		

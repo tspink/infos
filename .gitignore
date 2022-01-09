@@ -6,3 +6,5 @@ run.sh
 oot
 oot/
 *.idea
+cmake-build-debug/
+CMakeLists.txt

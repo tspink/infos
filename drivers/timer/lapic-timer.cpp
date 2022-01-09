@@ -224,7 +224,7 @@ void LAPICTimer::lapic_timer_irq_handler(const IRQ *irq, void* priv)
 	//syslog.messagef(LogLevel::DEBUG, "ns = %lu", ns);
 
 	// HACK HACK HACK -- this shouldn't be hard-coded in
-	sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(1)));		// Tell the kernel to update its internal runtime with +10mS
+	sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(10)));		// Tell the kernel to update its internal runtime with +10mS
 	sys.scheduler().update_accounting();		// Tell the scheduler to update process accounting
 	sys.scheduler().schedule();					// Cause a scheduling event to occur
 }
