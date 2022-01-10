@@ -125,8 +125,6 @@ void Scheduler::schedule()
 			// Update the current task pointer.
 			_current = next;
 
-            // Debugging output for the scheduler.
-	sched_log.messagef(LogLevel::DEBUG, "Scheduled %p (%s/%s)", _current, ((Thread *)_current)->owner().name().c_str(), ((Thread *)_current)->name().c_str());
 		} else {
 			// If the task failed to activate, try and forcibly activate the idle entity.
 			if (!_idle_entity->activate(_current)) {
@@ -141,8 +139,6 @@ void Scheduler::schedule()
 
 	// Update the execution start time for the task that's about to run.
 	_current->update_exec_start_time(owner().runtime());
-
-
 }
 
 /**

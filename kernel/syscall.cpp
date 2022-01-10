@@ -88,7 +88,7 @@ void DefaultSyscalls::sys_nop()
 
 void DefaultSyscalls::sys_yield()
 {
-	// syslog.messagef(LogLevel::DEBUG, "YIELD");
+//	 syslog.messagef(LogLevel::DEBUG, "YIELD");
 }
 
 // TODO: There is no userspace buffer checking done at all.  This really needs to be fixed...
