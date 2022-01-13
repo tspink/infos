@@ -17,8 +17,6 @@ using namespace infos::kernel;
 using namespace infos::mm;
 using namespace infos::util;
 
-#define MAX_ORDER 17
-
 /**
  * A simple page allocation algorithm.
  */
