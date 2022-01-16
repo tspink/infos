@@ -99,11 +99,14 @@ bool PageAllocator::init()
 
 	// Initialise the page allocator algorithm
 	mm_log.messagef(LogLevel::INFO, "Initialising allocator algorithm '%s'", _allocator_algorithm->name());
-	if (!_allocator_algorithm->init(_page_descriptors, _nr_pages))
+    mm_log.messagef(LogLevel::INFO, "Page Allocator: total=%lu", _nr_pages);
+    if (!_allocator_algorithm->init(_page_descriptors, _nr_pages))
 	{
 		mm_log.message(LogLevel::ERROR, "Allocator failed to initialise");
 		return false;
 	}
+
+	_allocator_algorithm->dump_state();
 
 	uint64_t nr_present_pages, nr_free_pages;
 
@@ -121,17 +124,27 @@ bool PageAllocator::init()
 				_page_descriptors[pfn].type = PageDescriptorType::AVAILABLE;
 			}
 
-			_allocator_algorithm->insert_page_range(&_page_descriptors[pmb.base_pfn], pmb.nr_pages);
-		}
+            _allocator_algorithm->insert_page_range(&_page_descriptors[pmb.base_pfn], pmb.nr_pages);
+        }
 	}
 
-	nr_free_pages = nr_present_pages;
+    _allocator_algorithm->dump_state();
+
+
+
+    nr_free_pages = nr_present_pages;
 
 	// Reserve page zero.  We can do without it.
-	nr_free_pages -= reserve_page_range(0, 1);
+    mm_log.messagef(LogLevel::INFO, "Reserving page zero");
+    nr_free_pages -= reserve_page_range(0, 1);
+    _allocator_algorithm->dump_state();
 
-	// Reserve initial page table pages
-	nr_free_pages -= reserve_page_range(1, 6);
+
+    // Reserve initial page table pages
+    mm_log.messagef(LogLevel::INFO, "Reserving initial page table pages");
+    nr_free_pages -= reserve_page_range(1, 6);
+
+    _allocator_algorithm->dump_state();
 
 	// Now, reserve the kernel's pages
 
@@ -169,12 +182,12 @@ bool PageAllocator::init()
 
 uint64_t PageAllocator::reserve_page_range(pfn_t start, uint64_t nr_pages)
 {
-	for (pfn_t pfn = start; pfn < start + nr_pages; pfn++)
+    for (pfn_t pfn = start; pfn < start + nr_pages; pfn++)
 	{
 		_page_descriptors[pfn].type = PageDescriptorType::RESERVED;
-	}
+    }
 
-	_allocator_algorithm->remove_page_range(&_page_descriptors[start], _nr_pages);
+    _allocator_algorithm->remove_page_range(&_page_descriptors[start], nr_pages);
 
 	return nr_pages;
 }
