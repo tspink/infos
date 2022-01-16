@@ -29,7 +29,7 @@ using namespace infos::fs;
  */
 void user_syscall_handler(const IRQ *irq, void *priv)
 {
-	//syslog.messagef(LogLevel::DEBUG, "USER SYSTEM CALL: thread=%p", Thread::current());
+//	syslog.messagef(LogLevel::DEBUG, "USER SYSTEM CALL: thread=%p", Thread::current());
 
 	X86Context *ctx = (X86Context *) Thread::current().context().native_context;
 
@@ -45,7 +45,7 @@ void user_syscall_handler(const IRQ *irq, void *priv)
  */
 void kernel_syscall_handler(const IRQ *irq, void *priv)
 {
-	//syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);*/
+//	syslog.messagef(LogLevel::DEBUG, "KERNEL SYSTEM CALL: rcx=%lx", current_context.rax);
 
 	int syscall = Thread::current().context().native_context->rax;
 	switch (syscall) {

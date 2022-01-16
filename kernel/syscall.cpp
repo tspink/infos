@@ -22,6 +22,7 @@ using namespace infos::kernel;
 using namespace infos::fs;
 using namespace infos::util;
 
+
 SyscallManager::SyscallManager()
 {
 	for (int i = 0; i < MAX_SYSCALLS; i++) {
@@ -87,7 +88,7 @@ void DefaultSyscalls::sys_nop()
 
 void DefaultSyscalls::sys_yield()
 {
-	// syslog.messagef(LogLevel::DEBUG, "YIELD");
+//	 syslog.messagef(LogLevel::DEBUG, "YIELD");
 }
 
 // TODO: There is no userspace buffer checking done at all.  This really needs to be fixed...
@@ -234,9 +235,9 @@ unsigned int DefaultSyscalls::sys_wait_proc(ObjectHandle h)
 	return 0;
 }
 
-ObjectHandle DefaultSyscalls::sys_create_thread(uintptr_t entry_point, uintptr_t arg)
+ObjectHandle DefaultSyscalls::sys_create_thread(uintptr_t entry_point, uintptr_t arg, SchedulingEntityPriority::SchedulingEntityPriority priority)
 {
-	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point, "other");
+	Thread& t = Thread::current().owner().create_thread(ThreadPrivilege::User, (Thread::thread_proc_t)entry_point, "other", priority);
 	ObjectHandle h = sys.object_manager().register_object(Thread::current(), &t);
 
 	virt_addr_t stack_addr = 0x7fff00000000;

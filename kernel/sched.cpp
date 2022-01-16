@@ -67,15 +67,12 @@ bool Scheduler::init()
 	// Install the discovered algorithm.
 	_algorithm = algo;
 
-	// Start the idle process thread, and forcibly activate it.  This is so that
-	// when interrupts are enabled, the idle thread becomes the context that is
-	// saved and restored.
-	idle_process->start();
+	// Set the idle entity to be runnable, and forcibly activate it.  This is so that
+	// when interrupts are enabled, the idle thread becomes the context that is saved and restored.
+	// We don't call set_entity_state() here, because that would add the idle task to the algorithm
+	// runqueue, meaning that the scheduler would schedule the idle task along with the regular tasks.
+    _idle_entity->_state = SchedulingEntityState::RUNNABLE;
 	idle_process->main_thread().activate(NULL);
-
-	// But also remove the idle thread from the algorithms run queue, as the
-	// scheduler shouldn't be scheduling this as a regular task.
-	algo->remove_from_runqueue(idle_process->main_thread());
 
 	return true;
 }
@@ -127,6 +124,7 @@ void Scheduler::schedule()
 		if (next->activate(_current)) {
 			// Update the current task pointer.
 			_current = next;
+
 		} else {
 			// If the task failed to activate, try and forcibly activate the idle entity.
 			if (!_idle_entity->activate(_current)) {
@@ -141,9 +139,6 @@ void Scheduler::schedule()
 
 	// Update the execution start time for the task that's about to run.
 	_current->update_exec_start_time(owner().runtime());
-
-	// Debugging output for the scheduler.
-	sched_log.messagef(LogLevel::DEBUG, "Scheduled %p (%s/%s)", _current, ((Thread *)_current)->owner().name().c_str(), ((Thread *)_current)->name().c_str());
 }
 
 /**
