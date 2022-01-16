@@ -221,7 +221,7 @@ void LAPICTimer::lapic_timer_irq_handler(const IRQ *irq, void* priv)
 
 	uint64_t ns = (delta_tsc * scale) / shift;*/
 
-	//syslog.messagef(LogLevel::DEBUG, "ns = %lu", ns);
+//	syslog.messagef(LogLevel::DEBUG, "ns = %lu", ns);
 
 	// HACK HACK HACK -- this shouldn't be hard-coded in
 	sys.update_runtime(DurationCast<Nanoseconds>(Milliseconds(10)));		// Tell the kernel to update its internal runtime with +10mS
