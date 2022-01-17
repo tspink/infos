@@ -106,8 +106,6 @@ bool PageAllocator::init()
 		return false;
 	}
 
-	_allocator_algorithm->dump_state();
-
 	uint64_t nr_present_pages, nr_free_pages;
 
 	// Loop through available physical memory blocks, and update the corresponding page descriptors.
@@ -128,23 +126,15 @@ bool PageAllocator::init()
         }
 	}
 
-    _allocator_algorithm->dump_state();
-
-
-
     nr_free_pages = nr_present_pages;
 
 	// Reserve page zero.  We can do without it.
     mm_log.messagef(LogLevel::INFO, "Reserving page zero");
     nr_free_pages -= reserve_page_range(0, 1);
-    _allocator_algorithm->dump_state();
-
 
     // Reserve initial page table pages
     mm_log.messagef(LogLevel::INFO, "Reserving initial page table pages");
     nr_free_pages -= reserve_page_range(1, 6);
-
-    _allocator_algorithm->dump_state();
 
 	// Now, reserve the kernel's pages
 
@@ -353,22 +343,19 @@ bool PageAllocator::self_test()
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(7) RESERVING PAGE 0x14e000 and 0x14f000");
-	//bool page_reserved = _allocator_algorithm->reserve_page(pfn_to_pgd(0x14e));
-	//assert(page_reserved);
-	//page_reserved = _allocator_algorithm->reserve_page(pfn_to_pgd(0x14f));
-	//assert(page_reserved);
-
+	mm_log.messagef(LogLevel::INFO, "(7) RESERVING PAGE 0x1d80 and 0x1d84");
+    _allocator_algorithm->remove_page_range(pfn_to_pgd(0x1d80), 1);
+	_allocator_algorithm->remove_page_range(pfn_to_pgd(0x1d84), 1);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(8) FREEING RESERVED PAGE 0x14f000");
-	_allocator_algorithm->free_pages(pfn_to_pgd(0x14f), 0);
+	mm_log.messagef(LogLevel::INFO, "(8) FREEING RESERVED PAGE 0x1d84");
+	_allocator_algorithm->free_pages(pfn_to_pgd(0x1d84), 0);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(9) FREEING RESERVED PAGE 0x14e000");
-	_allocator_algorithm->free_pages(pfn_to_pgd(0x14e), 0);
+	mm_log.messagef(LogLevel::INFO, "(9) FREEING RESERVED PAGE 0x1d80");
+	_allocator_algorithm->free_pages(pfn_to_pgd(0x1d80), 0);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
