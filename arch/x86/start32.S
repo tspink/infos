@@ -92,44 +92,56 @@ start32:
     out %al, $0xa1
     out %al, $0x21
 
+    // CR4 :=
+    mov $0x6b0, %eax
+    mov %eax, %cr4
+
     // CR4
-    mov $(CR4_PSE | CR4_PAE | CR4_PGE | CR4_OSFXSR | CR4_OSXMMEXCPT), %edi
+//    mov $(CR4_PSE | CR4_PAE | CR4_PGE | CR4_OSFXSR | CR4_OSXMMEXCPT), %edi
 
     // Check for XSAVE CPUID
-    mov $1, %eax
-    cpuid
-    bt $26, %ecx
-    jnc 1f
+//    mov $1, %eax
+//    cpuid
+//    bt $26, %ecx
+//    jnc 1f
 
-    or $(CR4_OSXSAVE), %edi
+//    or $(CR4_OSXSAVE), %edi
 
-1:
-    mov %edi, %cr4
+    // EFER :=
+    mov $0xC0000080, %ecx
+    rdmsr
+    or $0x000000901, %eax
+
+//1:
+//    mov %edi, %cr4
 
     // EFER
-    mov $(0xC0000080), %ecx
-    rdmsr
-    or $(EFER_SCE | EFER_LME | EFER_NXE), %eax
+//    mov $(0xC0000080), %ecx
+//    rdmsr
+//    or $(EFER_SCE | EFER_LME | EFER_NXE), %eax
     wrmsr
 
+    // CR0 := PG, PE, MP, EM, WP
+    mov $0x80010007, %eax
+
     // CR0
-    mov $(CR0_PG | CR0_PE | CR0_MP | CR0_WP), %eax
+//    mov $(CR0_PG | CR0_PE | CR0_MP | CR0_WP), %eax
     mov %eax, %cr0
 
     // XCR0
-    mov $1, %eax
-    cpuid
-    bt $27, %ecx
-    jnc 1f
+//    mov $1, %eax
+//    cpuid
+//    bt $27, %ecx
+//    jnc 1f
 
-    xor %ecx, %ecx
-    xor %eax, %eax
-    xor %edx, %edx
-    xgetbv
-    or $7, %eax
-    xsetbv
+//    xor %ecx, %ecx
+//    xor %eax, %eax
+//    xor %edx, %edx
+//    xgetbv
+//    or $7, %eax
+//    xsetbv
 
-1:
+//1:
 
     // Initialise the temporary GDT
     lgdt gdpt

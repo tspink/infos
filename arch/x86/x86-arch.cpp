@@ -80,12 +80,12 @@ bool X86Arch::init()
 	__wrmsr(MSR_LSTAR, (uint64_t)__syscall_trap);		// RIP for syscall entry
 	__wrmsr(MSR_SFMASK, (1 << 9));
 
-	auto feat = cpuid_get_features();
-	if (!(feat.rcx & (uint64_t)CPUIDFeatures::OSXSAVE)) {
-		syslog.message(LogLevel::WARNING, "XSAVE not supported");
-	} else {
-		syslog.message(LogLevel::INFO, "XSAVE enabled");
-	}
+//	auto feat = cpuid_get_features();
+//	if (!(feat.rcx & (uint64_t)CPUIDFeatures::OSXSAVE)) {
+//		syslog.message(LogLevel::WARNING, "XSAVE not supported");
+//	} else {
+//		syslog.message(LogLevel::INFO, "XSAVE enabled");
+//	}
 
 	return true;
 }
