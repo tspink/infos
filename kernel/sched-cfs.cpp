@@ -28,6 +28,14 @@ public:
 	 * Returns the friendly name of the algorithm, for debugging and selection purposes.
 	 */
 	const char* name() const override { return "cfs"; }
+
+    /**
+     * Called during scheduler initialisation.
+     */
+    void init()
+    {
+        // Meh
+    }
 	
 	/**
 	 * Called when a scheduling entity becomes eligible for running.

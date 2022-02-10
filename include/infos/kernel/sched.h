@@ -28,7 +28,8 @@ namespace infos
 		public:
 			virtual const char *name() const = 0;
 			virtual SchedulingEntity *pick_next_entity();
-			
+
+            virtual void init();
 			virtual void add_to_runqueue(SchedulingEntity& entity) = 0;
 			virtual void remove_from_runqueue(SchedulingEntity& entity) = 0;
 		};
