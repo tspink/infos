@@ -66,6 +66,7 @@ bool Scheduler::init()
 
 	// Install the discovered algorithm.
 	_algorithm = algo;
+    _algorithm->init();
 
 	// Set the idle entity to be runnable, and forcibly activate it.  This is so that
 	// when interrupts are enabled, the idle thread becomes the context that is saved and restored.
