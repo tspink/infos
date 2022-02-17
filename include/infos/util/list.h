@@ -2,10 +2,10 @@
 
 /*
  * include/util/list.h
- * 
+ *
  * InfOS
  * Copyright (C) University of Edinburgh 2016.  All Rights Reserved.
- * 
+ *
  * Tom Spink <tspink@inf.ed.ac.uk>
  */
 #pragma once
@@ -17,205 +17,285 @@ namespace infos
 {
 	namespace util
 	{
-		template<typename T>
+		template <typename T>
 		struct ListNode
 		{
 			typedef T Elem;
 			typedef ListNode<T> Self;
-			
+
+			Self *Prev;
 			Self *Next;
 			Elem Data;
 		};
-		
-		template<typename T>
+
+		template <typename T>
 		struct ListIterator
 		{
 			typedef T Elem;
 			typedef ListIterator<Elem> Self;
 			typedef ListNode<Elem> Node;
-			
-			ListIterator(Node *current) : _current(current) { }
-			ListIterator(const Self& other) : _current(other._current) { }
-			ListIterator(Self&& other) : _current(other._current) { other._current = NULL; }
-			
-			const Elem& operator*() const {
+
+			ListIterator(Node *current) : _current(current) {}
+			ListIterator(const Self &other) : _current(other._current) {}
+			ListIterator(Self &&other) : _current(other._current) { other._current = nullptr; }
+
+			const Elem &operator*() const
+			{
+				assert(_current != nullptr);
 				return _current->Data;
 			}
-			
-			void operator++() {
+
+			void operator++()
+			{
 				if (_current)
 					_current = _current->Next;
 			}
-			
-			bool operator==(const Self& other) const {
+
+			bool operator==(const Self &other) const
+			{
 				return _current == other._current;
 			}
-		
-			bool operator!=(const Self& other) const {
+
+			bool operator!=(const Self &other) const
+			{
 				return _current != other._current;
 			}
-		
+
 		private:
 			Node *_current;
 		};
-		
-		template<typename T>
+
+		template <typename T>
 		class List
 		{
 		public:
 			typedef T Elem;
 			typedef const T ConstElem;
-			
+
 			typedef List<Elem> Self;
 			typedef ListNode<Elem> Node;
 			typedef ListIterator<Elem> Iterator;
-			
-			List() : _elems(NULL), _count(0) { }
-			
-			// Copy
-			List(const Self& r) : _elems(NULL), _count(0) {
-				for (const auto& elem : r) {
-					append(elem);
+
+			List() : _node{nullptr}, _count(0) {}
+
+			List(const Self &r)
+			{
+				_construct();
+				for (const Elem &elem : r)
+				{
+					push_back(elem);
 				}
 			}
 
-			// Move
-			List(Self&& r) : _elems(r._elems), _count(r._count) { r._elems = NULL; r._count = 0; }
-			
-			~List() {
-				Node *node = _elems;
-				while (node) {
-					Node *next = node->Next;
-					delete node;
-					node = next;
+			List(Self &&r) : _node(r._node), _count(r._count)
+			{
+				r._node = nullptr;
+				r._count = 0;
+			}
+
+			~List()
+			{
+				if (_node)
+				{
+					Node *ptr = _node->Next;
+					while (!_is_dummy_node(ptr))
+					{
+						Node *next = ptr->Next;
+						delete ptr;
+						ptr = next;
+					}
+					delete _node;
 				}
 			}
-			
-			void append(Elem const& elem) {
-				Node **slot = &_elems;
-				
-				while (*slot != NULL) {
-					slot = &(*slot)->Next;
-				}
-				
-				*slot = new Node();
-				(*slot)->Data = elem;
-				(*slot)->Next = NULL;				
-				
-				_count++;
+
+			void push_back(Elem const &elem)
+			{
+				if (_node == nullptr)
+					_construct();
+				Node *new_node = new Node();
+				new_node->Data = elem;
+				new_node->Next = _node;
+				new_node->Prev = _node->Prev;
+
+				_node->Prev->Next = new_node;
+				_node->Prev = new_node;
+				++_count;
 			}
-			
-			void remove(Elem const& elem) {
-				Node **slot = &_elems;
-				
-				while (*slot && (*slot)->Data != elem) {
-					slot = &(*slot)->Next;
-				}
-				
-				if (*slot) {
-					Node *candidate = *slot;
-					assert(candidate->Data == elem);
-					
-					*slot = candidate->Next;
-										
-					delete candidate;
-					_count--;
-				}	
+
+			void push_front(Elem const &elem)
+			{
+				if (_node == nullptr)
+					_construct();
+				Node *new_node = new Node();
+				new_node->Data = elem;
+				new_node->Prev = _node;
+				new_node->Next = _node->Next;
+
+				_node->Next->Prev = new_node;
+				_node->Next = new_node;
+				++_count;
 			}
-			
-			Elem dequeue() {
-				assert(_elems);
-				
-				Node *front = _elems;
-				
-				Elem ret = front->Data;
-				_elems = front->Next;
-				delete front;
-				_count--;
-				
+
+			void remove(Elem const &elem)
+			{
+				if (_node == nullptr)
+					_construct();
+				Node *ptr = _node->Next;
+				while (!_is_dummy_node(ptr) && ptr->Data != elem)
+				{
+					ptr = ptr->Next;
+				}
+
+				if (!_is_dummy_node(ptr))
+				{
+					ptr->Prev->Next = ptr->Next;
+					ptr->Next->Prev = ptr->Prev;
+					delete ptr;
+					--_count;
+				}
+			}
+
+			Elem pop_back()
+			{
+				if (_node == nullptr)
+					_construct();
+				assert(!_is_dummy_node(_node->Prev));
+
+				Node *ptr = _node->Prev;
+				Elem ret = ptr->Data;
+				ptr->Prev->Next = ptr->Next;
+				ptr->Next->Prev = ptr->Prev;
+				delete ptr;
+				--_count;
+
 				return ret;
 			}
-			
-			void enqueue(Elem const& elem)
+
+			Elem pop_front()
 			{
-				append(elem);
-			}
-			
-			void push(Elem const& elem)
-			{
-				Node *node = new Node();
-				node->Data = elem;
-				node->Next = _elems;
-				_elems = node;
-				
-				_count++;
-			}
-			
-			Elem pop() {
-				return dequeue();
-			}
-			
-			Elem const& first() const {
-				assert(_elems);
-				return _elems->Data;
+				if (_node == nullptr)
+					_construct();
+				assert(!_is_dummy_node(_node->Next));
+
+				Node *ptr = _node->Next;
+				Elem ret = ptr->Data;
+				ptr->Prev->Next = ptr->Next;
+				ptr->Next->Prev = ptr->Prev;
+				delete ptr;
+				--_count;
+
+				return ret;
 			}
 
-			Elem const& last() const {
-				assert(_elems);
-				
-				Node *last = _elems;
-				while (last->Next) {
-					last = last->Next;
-				}
-				
-				return last->Data;
-			}
-			
-			Elem const& at(int index) const {
-				int ctr = 0;
-				Node *n = _elems;
-				
-				while (ctr != index && n) {
-					n = n->Next;
-					ctr++;
-				}
-				
-				assert(n);
-				return n->Data;
-			}
-			
-			unsigned int count() const {
-				return _count;
-			}
-			
-			bool empty() const { return _count == 0; }
-			
-			void clear()
+			// legacy support
+			void append(Elem const &elem)
 			{
-				Node *cur = _elems;
-				while (cur) {
-					Node *tmp = cur;
-					cur = tmp->Next;
-					delete tmp;
-				}
-				
-				_elems = NULL;
-				_count = 0;
+				push_back(elem);
 			}
-			
+
+			// legacy support
+			Elem dequeue()
+			{
+				return pop_front();
+			}
+
+			// legacy support
+			void enqueue(Elem const &elem)
+			{
+				push_back(elem);
+			}
+
+			// legacy support
+			void push(Elem const &elem)
+			{
+				push_front(elem);
+			}
+
+			// legacy support
+			Elem pop()
+			{
+				return pop_front();
+			}
+
 			Iterator begin() const
 			{
-				return Iterator(_elems);
+				return _node == nullptr ? Iterator(_node) : Iterator(_node->Next);
 			}
-			
+
 			Iterator end() const
 			{
-				return Iterator(NULL);
+				return Iterator(_node);
 			}
-			
-		private:			
-			Node *_elems;
+
+			Elem const &first() const
+			{
+				assert(_node != nullptr);
+				assert(!_is_dummy_node(_node->Next));
+				return _node->Next->Data;
+			}
+
+			Elem const &last() const
+			{
+				assert(_node != nullptr);
+				assert(!_is_dummy_node(_node->Prev));
+				return _node->Prev->Data;
+			}
+
+			Elem const &at(int index) const
+			{
+				assert(_node != nullptr);
+				int counter = 0;
+				Node *ptr = _node->Next;
+				while (counter != index && !_is_dummy_node(ptr))
+				{
+					ptr = ptr->Next;
+					++counter;
+				}
+
+				assert(!_is_dummy_node(ptr));
+				return ptr->Data;
+			}
+
+			unsigned int count() const
+			{
+				return _count;
+			}
+
+			void clear()
+			{
+				if (_node == nullptr)
+					_construct();
+				Node *ptr = _node->Next;
+				while (!_is_dummy_node(ptr))
+				{
+					Node *tmp = ptr;
+					ptr = tmp->Next;
+					delete tmp;
+				}
+
+				_node->Next = _node;
+				_node->Prev = _node;
+				_count = 0;
+			}
+
+			bool empty() const { return _count == 0; }
+
+		private:
+			Node *_node;
 			unsigned int _count;
+
+			bool _is_dummy_node(Node *ptr) const
+			{
+				return ptr == _node;
+			}
+
+			void _construct()
+			{
+				_node = new Node();
+				_node->Prev = _node;
+				_node->Next = _node;
+				_count = 0;
+			}
 		};
 	}
 }
