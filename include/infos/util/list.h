@@ -35,7 +35,7 @@ namespace infos
 			typedef ListIterator<Elem> Self;
 			typedef ListNode<Elem> Node;
 
-			ListIterator(Node *current) : _current(current) {}
+			ListIterator(const Node *current) : _current(current) {}
 			ListIterator(const Self &other) : _current(other._current) {}
 			ListIterator(Self &&other) : _current(other._current) { other._current = nullptr; }
 
@@ -62,7 +62,7 @@ namespace infos
 			}
 
 		private:
-			Node *_current;
+			const Node *_current;
 		};
 
 		template <typename T>
@@ -76,7 +76,10 @@ namespace infos
 			typedef ListNode<Elem> Node;
 			typedef ListIterator<Elem> Iterator;
 
-			List() : _node{nullptr}, _count(0) {}
+			List()
+			{
+				_construct();
+			}
 
 			List(const Self &r)
 			{
@@ -87,60 +90,46 @@ namespace infos
 				}
 			}
 
-			List(Self &&r) : _node(r._node), _count(r._count)
-			{
-				r._node = nullptr;
-				r._count = 0;
-			}
+			List(Self &&r) : _node(r._node), _count(r._count) {}
 
 			~List()
 			{
-				if (_node)
+				Node *ptr = _node.Next;
+				while (!_is_dummy_node(ptr))
 				{
-					Node *ptr = _node->Next;
-					while (!_is_dummy_node(ptr))
-					{
-						Node *next = ptr->Next;
-						delete ptr;
-						ptr = next;
-					}
-					delete _node;
+					Node *next = ptr->Next;
+					delete ptr;
+					ptr = next;
 				}
 			}
 
 			void push_back(Elem const &elem)
 			{
-				if (_node == nullptr)
-					_construct();
 				Node *new_node = new Node();
 				new_node->Data = elem;
-				new_node->Next = _node;
-				new_node->Prev = _node->Prev;
+				new_node->Next = &_node;
+				new_node->Prev = _node.Prev;
 
-				_node->Prev->Next = new_node;
-				_node->Prev = new_node;
+				_node.Prev->Next = new_node;
+				_node.Prev = new_node;
 				++_count;
 			}
 
 			void push_front(Elem const &elem)
 			{
-				if (_node == nullptr)
-					_construct();
 				Node *new_node = new Node();
 				new_node->Data = elem;
-				new_node->Prev = _node;
-				new_node->Next = _node->Next;
+				new_node->Prev = &_node;
+				new_node->Next = _node.Next;
 
-				_node->Next->Prev = new_node;
-				_node->Next = new_node;
+				_node.Next->Prev = new_node;
+				_node.Next = new_node;
 				++_count;
 			}
 
 			void remove(Elem const &elem)
 			{
-				if (_node == nullptr)
-					_construct();
-				Node *ptr = _node->Next;
+				Node *ptr = _node.Next;
 				while (!_is_dummy_node(ptr) && ptr->Data != elem)
 				{
 					ptr = ptr->Next;
@@ -157,11 +146,9 @@ namespace infos
 
 			Elem pop_back()
 			{
-				if (_node == nullptr)
-					_construct();
-				assert(!_is_dummy_node(_node->Prev));
+				assert(!_is_dummy_node(_node.Prev));
 
-				Node *ptr = _node->Prev;
+				Node *ptr = _node.Prev;
 				Elem ret = ptr->Data;
 				ptr->Prev->Next = ptr->Next;
 				ptr->Next->Prev = ptr->Prev;
@@ -173,11 +160,9 @@ namespace infos
 
 			Elem pop_front()
 			{
-				if (_node == nullptr)
-					_construct();
-				assert(!_is_dummy_node(_node->Next));
+				assert(!_is_dummy_node(_node.Next));
 
-				Node *ptr = _node->Next;
+				Node *ptr = _node.Next;
 				Elem ret = ptr->Data;
 				ptr->Prev->Next = ptr->Next;
 				ptr->Next->Prev = ptr->Prev;
@@ -219,33 +204,30 @@ namespace infos
 
 			Iterator begin() const
 			{
-				return _node == nullptr ? Iterator(_node) : Iterator(_node->Next);
+				return Iterator(_node.Next);
 			}
 
 			Iterator end() const
 			{
-				return Iterator(_node);
+				return Iterator(&_node);
 			}
 
 			Elem const &first() const
 			{
-				assert(_node != nullptr);
-				assert(!_is_dummy_node(_node->Next));
-				return _node->Next->Data;
+				assert(!_is_dummy_node(_node.Next));
+				return _node.Next->Data;
 			}
 
 			Elem const &last() const
 			{
-				assert(_node != nullptr);
-				assert(!_is_dummy_node(_node->Prev));
-				return _node->Prev->Data;
+				assert(!_is_dummy_node(_node.Prev));
+				return _node.Prev->Data;
 			}
 
 			Elem const &at(int index) const
 			{
-				assert(_node != nullptr);
 				int counter = 0;
-				Node *ptr = _node->Next;
+				Node *ptr = _node.Next;
 				while (counter != index && !_is_dummy_node(ptr))
 				{
 					ptr = ptr->Next;
@@ -263,9 +245,7 @@ namespace infos
 
 			void clear()
 			{
-				if (_node == nullptr)
-					_construct();
-				Node *ptr = _node->Next;
+				Node *ptr = _node.Next;
 				while (!_is_dummy_node(ptr))
 				{
 					Node *tmp = ptr;
@@ -273,27 +253,26 @@ namespace infos
 					delete tmp;
 				}
 
-				_node->Next = _node;
-				_node->Prev = _node;
+				_node.Next = &_node;
+				_node.Prev = &_node;
 				_count = 0;
 			}
 
 			bool empty() const { return _count == 0; }
 
 		private:
-			Node *_node;
+			Node _node; // dummy node
 			unsigned int _count;
 
 			bool _is_dummy_node(Node *ptr) const
 			{
-				return ptr == _node;
+				return ptr == &_node;
 			}
 
 			void _construct()
 			{
-				_node = new Node();
-				_node->Prev = _node;
-				_node->Next = _node;
+				_node.Prev = &_node;
+				_node.Next = &_node;
 				_count = 0;
 			}
 		};
