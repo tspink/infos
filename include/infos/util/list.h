@@ -35,9 +35,48 @@ namespace infos
 			typedef ListIterator<Elem> Self;
 			typedef ListNode<Elem> Node;
 
-			ListIterator(const Node *current) : _current(current) {}
+			ListIterator(Node *current) : _current(current) {}
 			ListIterator(const Self &other) : _current(other._current) {}
 			ListIterator(Self &&other) : _current(other._current) { other._current = nullptr; }
+
+			Elem &operator*() const
+			{
+				assert(_current != nullptr);
+				return _current->Data;
+			}
+
+			void operator++()
+			{
+				if (_current)
+					_current = _current->Next;
+			}
+
+			bool operator==(const Self &other) const
+			{
+				return _current == other._current;
+			}
+
+			bool operator!=(const Self &other) const
+			{
+				return _current != other._current;
+			}
+
+		private:
+			Node *_current;
+		};
+
+		template <typename T>
+		struct ListConstIterator
+		{
+			typedef T Elem;
+			typedef ListIterator<Elem> Iterator;
+			typedef ListConstIterator<Elem> Self;
+			typedef ListNode<Elem> Node;
+
+			ListConstIterator(const Node *current) : _current(current) {}
+			ListConstIterator(const Self &other) : _current(other._current) {}
+			ListConstIterator(const Iterator &other) : _current(other._current) {} // convert iterator to const_iterator
+			ListConstIterator(Self &&other) : _current(other._current) { other._current = nullptr; }
 
 			const Elem &operator*() const
 			{
@@ -75,6 +114,8 @@ namespace infos
 			typedef List<Elem> Self;
 			typedef ListNode<Elem> Node;
 			typedef ListIterator<Elem> Iterator;
+			typedef ListConstIterator<Elem> ConstIterator;
+			typedef unsigned int size_type;
 
 			List()
 			{
@@ -202,14 +243,30 @@ namespace infos
 				return pop_front();
 			}
 
-			Iterator begin() const
+			Iterator begin()
 			{
 				return Iterator(_node.Next);
 			}
 
-			Iterator end() const
+			ConstIterator begin() const
+			{
+				return ConstIterator(_node.Next);
+			}
+
+			Iterator end()
 			{
 				return Iterator(&_node);
+			}
+
+			ConstIterator end() const
+			{
+				return ConstIterator(&_node);
+			}
+
+			Elem &first()
+			{
+				assert(!_is_dummy_node(_node.Next));
+				return _node.Next->Data;
 			}
 
 			Elem const &first() const
@@ -218,10 +275,30 @@ namespace infos
 				return _node.Next->Data;
 			}
 
+			Elem &last()
+			{
+				assert(!_is_dummy_node(_node.Prev));
+				return _node.Prev->Data;
+			}
+
 			Elem const &last() const
 			{
 				assert(!_is_dummy_node(_node.Prev));
 				return _node.Prev->Data;
+			}
+
+			Elem &at(int index)
+			{
+				int counter = 0;
+				Node *ptr = _node.Next;
+				while (counter != index && !_is_dummy_node(ptr))
+				{
+					ptr = ptr->Next;
+					++counter;
+				}
+
+				assert(!_is_dummy_node(ptr));
+				return ptr->Data;
 			}
 
 			Elem const &at(int index) const
@@ -238,7 +315,7 @@ namespace infos
 				return ptr->Data;
 			}
 
-			unsigned int count() const
+			size_type count() const
 			{
 				return _count;
 			}
@@ -262,7 +339,7 @@ namespace infos
 
 		private:
 			Node _node; // dummy node
-			unsigned int _count;
+			size_type _count;
 
 			bool _is_dummy_node(Node *ptr) const
 			{
