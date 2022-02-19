@@ -25,7 +25,30 @@ namespace infos
 
 			Self *Prev;
 			Self *Next;
-			Elem Data;
+			Elem *Data;
+
+			ListNode() : Prev(this), Next(this), Data(nullptr){}; // for dummy object
+			ListNode(Elem const &data) : Prev(this), Next(this), Data(new Elem(data)) {}
+			~ListNode()
+			{
+				if (Data)
+				{
+					delete Data;
+					Data = nullptr;
+				}
+			}
+
+			Elem &get_data()
+			{
+				assert(Data);
+				return *Data;
+			}
+
+			const Elem &get_data() const
+			{
+				assert(Data);
+				return *Data;
+			}
 		};
 
 		template <typename T>
@@ -42,7 +65,7 @@ namespace infos
 			Elem &operator*() const
 			{
 				assert(_current != nullptr);
-				return _current->Data;
+				return (_current->get_data());
 			}
 
 			void operator++()
@@ -81,7 +104,7 @@ namespace infos
 			const Elem &operator*() const
 			{
 				assert(_current != nullptr);
-				return _current->Data;
+				return _current->get_data();
 			}
 
 			void operator++()
@@ -146,8 +169,7 @@ namespace infos
 
 			void push_back(Elem const &elem)
 			{
-				Node *new_node = new Node();
-				new_node->Data = elem;
+				Node *new_node = new Node(elem);
 				new_node->Next = &_node;
 				new_node->Prev = _node.Prev;
 
@@ -158,8 +180,7 @@ namespace infos
 
 			void push_front(Elem const &elem)
 			{
-				Node *new_node = new Node();
-				new_node->Data = elem;
+				Node *new_node = new Node(elem);
 				new_node->Prev = &_node;
 				new_node->Next = _node.Next;
 
@@ -171,7 +192,7 @@ namespace infos
 			void remove(Elem const &elem)
 			{
 				Node *ptr = _node.Next;
-				while (!_is_dummy_node(ptr) && ptr->Data != elem)
+				while (!_is_dummy_node(ptr) && ptr->get_data() != elem)
 				{
 					ptr = ptr->Next;
 				}
@@ -190,7 +211,7 @@ namespace infos
 				assert(!_is_dummy_node(_node.Prev));
 
 				Node *ptr = _node.Prev;
-				Elem ret = ptr->Data;
+				Elem ret = ptr->get_data();
 				ptr->Prev->Next = ptr->Next;
 				ptr->Next->Prev = ptr->Prev;
 				delete ptr;
@@ -204,7 +225,7 @@ namespace infos
 				assert(!_is_dummy_node(_node.Next));
 
 				Node *ptr = _node.Next;
-				Elem ret = ptr->Data;
+				Elem ret = ptr->get_data();
 				ptr->Prev->Next = ptr->Next;
 				ptr->Next->Prev = ptr->Prev;
 				delete ptr;
@@ -266,25 +287,25 @@ namespace infos
 			Elem &first()
 			{
 				assert(!_is_dummy_node(_node.Next));
-				return _node.Next->Data;
+				return _node.Next->get_data();
 			}
 
 			Elem const &first() const
 			{
 				assert(!_is_dummy_node(_node.Next));
-				return _node.Next->Data;
+				return _node.Next->get_data();
 			}
 
 			Elem &last()
 			{
 				assert(!_is_dummy_node(_node.Prev));
-				return _node.Prev->Data;
+				return _node.Prev->get_data();
 			}
 
 			Elem const &last() const
 			{
 				assert(!_is_dummy_node(_node.Prev));
-				return _node.Prev->Data;
+				return _node.Prev->get_data();
 			}
 
 			Elem &at(int index)
@@ -298,7 +319,7 @@ namespace infos
 				}
 
 				assert(!_is_dummy_node(ptr));
-				return ptr->Data;
+				return ptr->get_data();
 			}
 
 			Elem const &at(int index) const
@@ -312,7 +333,7 @@ namespace infos
 				}
 
 				assert(!_is_dummy_node(ptr));
-				return ptr->Data;
+				return ptr->get_data();
 			}
 
 			size_type count() const
