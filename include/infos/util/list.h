@@ -140,21 +140,23 @@ namespace infos
 			typedef ListConstIterator<Elem> ConstIterator;
 			typedef unsigned int size_type;
 
-			List()
-			{
-				_construct();
-			}
+			List() : _node(Node()), _count(0) {}
 
-			List(const Self &r)
+			List(const Self &r) : _node(Node()), _count(0)
 			{
-				_construct();
 				for (const Elem &elem : r)
 				{
 					push_back(elem);
 				}
 			}
 
-			List(Self &&r) : _node(r._node), _count(r._count) {}
+			List(Self &&r) : _node(r._node), _count(r._count)
+			{
+				r._node.Prev = nullptr;
+				r._node.Next = nullptr;
+				r._node.Data = nullptr;
+				r._count = 0;
+			}
 
 			~List()
 			{
@@ -365,13 +367,6 @@ namespace infos
 			bool _is_dummy_node(Node *ptr) const
 			{
 				return ptr == &_node;
-			}
-
-			void _construct()
-			{
-				_node.Prev = &_node;
-				_node.Next = &_node;
-				_count = 0;
 			}
 		};
 	}
