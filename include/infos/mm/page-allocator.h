@@ -32,6 +32,7 @@ namespace infos
 		struct PageDescriptor
 		{
 			PageDescriptor *next_free;
+			PageDescriptor *prev_free;
 			PageDescriptorType::PageDescriptorType type;
 		} __aligned(16);
 

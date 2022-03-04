@@ -66,6 +66,9 @@ public:
 		PageDescriptor *base = pgd;
 		for (unsigned int i = 0; i < ((unsigned int)1 << (unsigned int)order); i++)
 		{
+			// Causes the self test to fail because we don't actually allocate the pages
+			// However, this is fine, because the self test doesn't really make sense in 
+			// the context of the simple page allocator, which has no internal state
 			assert(base[i].type == PageDescriptorType::ALLOCATED);
 		}
 	}

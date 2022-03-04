@@ -137,22 +137,25 @@ bool PageAllocator::init()
     nr_free_pages -= reserve_page_range(1, 6);
 
 	// Now, reserve the kernel's pages
-
 	// Reserve the range of pages corresponding to the kernel image
-	pfn_t image_start_pfn = pa_to_pfn((phys_addr_t)&_IMAGE_START); // _IMAGE_START is a PA
-	pfn_t image_last_pfn = pa_to_pfn((phys_addr_t)&_IMAGE_END);	   // _IMAGE_END is a PA
-
-	nr_free_pages -= reserve_page_range(image_start_pfn, image_last_pfn - image_start_pfn + 1);
-
+	// pfn_t image_start_pfn = pa_to_pfn((phys_addr_t)&_IMAGE_START); // _IMAGE_START is a PA
+	// pfn_t image_last_pfn = pa_to_pfn((phys_addr_t)&_IMAGE_END);	   // _IMAGE_END is a PA
+	// nr_free_pages -= reserve_page_range(image_start_pfn, image_last_pfn - image_start_pfn + 1);
+	
 	// Reserve the range of pages corresponding to the kernel stack
-	pfn_t stack_start_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_STACK_START)); // _STACK_START is a VA
-	pfn_t stack_last_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_STACK_END));	  // _STACK_END is a VA
-	nr_free_pages -= reserve_page_range(stack_start_pfn, stack_last_pfn - stack_start_pfn + 1);
+	// pfn_t stack_start_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_STACK_START)); // _STACK_START is a VA
+	// pfn_t stack_last_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_STACK_END));	  // _STACK_END is a VA
+	// nr_free_pages -= reserve_page_range(stack_start_pfn, stack_last_pfn - stack_start_pfn + 1);
 
 	// Reserve the range of pages corresponding to the kernel heap, which is
 	// actually just the page descriptors.
-	pfn_t heap_start_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_HEAP_START)); // _HEAP_START is a VA
-	nr_free_pages -= reserve_page_range(heap_start_pfn, ((_nr_pages * sizeof(PageDescriptor)) >> 12) + 1);
+	// pfn_t heap_start_pfn = pa_to_pfn(kva_to_pa((virt_addr_t)&_HEAP_START)); // _HEAP_START is a VA
+	// nr_free_pages -= reserve_page_range(heap_start_pfn, ((_nr_pages * sizeof(PageDescriptor)) >> 12) + 1);
+
+	// Reserve the whole range from kernel image start to kernel heap end, which eliminates the
+	// problem of overlapping insertions and makes the remove_page_range implementation more efficient
+	pfn_t image_start_pfn = pa_to_pfn((phys_addr_t)&_IMAGE_START); // _IMAGE_START is a PA
+	nr_free_pages -= reserve_page_range(image_start_pfn, ((_nr_pages * sizeof(PageDescriptor)) >> 12) + 1);
 
 	mm_log.messagef(LogLevel::INFO, "Page Allocator: total=%lu, present=%lu, free=%lu (%u MB)", _nr_pages, nr_present_pages, nr_free_pages, MB(nr_free_pages << 12));
 
@@ -343,19 +346,19 @@ bool PageAllocator::self_test()
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(7) RESERVING PAGE 0x1d80 and 0x1d84");
-    _allocator_algorithm->remove_page_range(pfn_to_pgd(0x1d80), 1);
-	_allocator_algorithm->remove_page_range(pfn_to_pgd(0x1d84), 1);
+	mm_log.messagef(LogLevel::INFO, "(7) RESERVING PAGE 0x4d80 and 0x4d84");
+    _allocator_algorithm->remove_page_range(pfn_to_pgd(0x4d80), 1);
+	_allocator_algorithm->remove_page_range(pfn_to_pgd(0x4d84), 1);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(8) FREEING RESERVED PAGE 0x1d84");
-	_allocator_algorithm->free_pages(pfn_to_pgd(0x1d84), 0);
+	mm_log.messagef(LogLevel::INFO, "(8) FREEING RESERVED PAGE 0x4d84");
+	_allocator_algorithm->free_pages(pfn_to_pgd(0x4d84), 0);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
-	mm_log.messagef(LogLevel::INFO, "(9) FREEING RESERVED PAGE 0x1d80");
-	_allocator_algorithm->free_pages(pfn_to_pgd(0x1d80), 0);
+	mm_log.messagef(LogLevel::INFO, "(9) FREEING RESERVED PAGE 0x4d80");
+	_allocator_algorithm->free_pages(pfn_to_pgd(0x4d80), 0);
 	_allocator_algorithm->dump_state();
 
 	mm_log.messagef(LogLevel::INFO, "------------------------");
