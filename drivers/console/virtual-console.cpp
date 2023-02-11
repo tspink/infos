@@ -21,14 +21,15 @@ using namespace infos::fs;
 
 const DeviceClass VirtualConsole::VirtualConsoleDeviceClass(Console::ConsoleDeviceClass, "vc");
 
-VirtualConsole::VirtualConsole() : _current_mod_mask(None), _current_pos(0), _buffer(NULL), _ucb(NULL)
+VirtualConsole::VirtualConsole() : _current_mod_mask(None), _current_pos(0),
+	_escape_nchars(0), _attr_byte(0x07), _buffer(NULL), _ucb(NULL)
 {
 	_buffer = new uint16_t[_width * _height];
-
 	for (int i = 0; i < _width * _height; i++)
 	{
 		_buffer[i] = 0x0700;
 	}
+	memset(_escape_buffer, 0, sizeof _escape_buffer);
 }
 
 VirtualConsole::~VirtualConsole()
@@ -137,23 +138,150 @@ void VirtualConsole::key_down(Keys::Keys key)
 	_terminal->append_to_read_buffer(ch);
 }
 
+uint8_t VirtualConsole::apply_ansi_specifier(int code)
+{
+	/* Update our attribute byte based on the following supported ANSI specifiers.
+		 0      reset attributes
+		 5      blink (slow)
+		 7      inverse video
+		25      blink off
+		27      inverse off
+		30--37  set foreground color (3-bit)
+		39      set default foreground color
+		40--47  set background color
+		49      set default background color
+		90--97  set bright foreground color
+
+	 ANSI low-intensity colours are in bit order 'BGR'
+		0	Black        000 (RGB)
+		1	Red          100
+		2	Green        010
+		3	Yellow       110
+		4	Blue         001
+		5	Magenta      101
+		6	Cyan         011
+		7	Grey/white   111
+
+	 BIOS low-intensity colours are more sensibly 'RGB'.
+		0	Black        000
+		1	Blue         001  <-- different
+		2	Green        010
+		3	Cyan         011  <-- different
+		4	Red          100  <-- different
+		5	Magenta      101
+		6	Brown        110  <-- different
+		7	Grey/white   111
+
+	 To convert (symmetric), we swap bit 0 with bit 2.
+	 */
+	// FIXME: enumify/prettify this
+#define BLINK 0x80
+#define INVERT(x)  ( (((x)&0x7) << 4) | (((x)&(0x7<<4))>>4) | ((x) & BLINK) )
+#define CONVERT_3BIT(x)  ( (((x) & 1) << 2) | ((x) & 2) | (((x) & 4) >> 2) )
+	switch (code)
+	{
+		case 0:   /* reset */      _attr_byte = 0x07; break;
+		case 5:   /* blink */      _attr_byte |= BLINK; break;
+		case 7:   /* reverse */    _attr_byte = INVERT(_attr_byte); break;
+		case 25:  /* no blink */   _attr_byte &= ~BLINK; break;
+		case 27:  /* no reverse */ _attr_byte = INVERT(_attr_byte); break;
+		// foreground -- low 4 bits
+		case 30 ... 37:
+			_attr_byte &= ~0xf; _attr_byte |= CONVERT_3BIT(code-30);
+			break;
+		case 39: /* default foreground colour is 0x7 */
+			_attr_byte &= ~0xf; _attr_byte |= 0x7; break;
+		// background: bits 4..6
+		case 40 ... 47:
+			_attr_byte &= ~(0x7<<4); _attr_byte |= (CONVERT_3BIT(code-40)<<4);
+			break;
+		case 49: /* default background colour is 0, i.e. just clear the bits */
+			_attr_byte &= ~(0x7<<4); break;
+		// foreground again, but with intensity
+		case 90 ... 97:
+			_attr_byte &= ~0xf; _attr_byte |= (0x08u | (CONVERT_3BIT(code-90)));
+			break;
+		default:
+			break;
+	}
+	return _attr_byte;
+}
+void VirtualConsole::parse_escape_buffer()
+{
+	int decimal = -1;
+	assert(_escape_nchars > 1);
+	assert(_escape_buffer[0] == '\033');
+	assert(_escape_buffer[1] == '[');
+	for (int pos = 2; pos < _escape_nchars; ++pos)
+	{
+		char e = _escape_buffer[pos];
+		switch (e)
+		{
+			case ';':
+			case 'm':
+				if (decimal != -1) apply_ansi_specifier(decimal);
+				decimal = -1;
+				break;
+			case '0' ... '9':
+				decimal = 10 * ((decimal == -1) ? 0 : decimal) + (e - '0');
+				break;
+			default: assert(false);
+		}
+	}
+}
 int VirtualConsole::write(const void *buffer, size_t size)
 {
 	if (!_buffer)
 		return 0;
 
-	int attr = 0x0700;
-	int state = 0;
 	for (unsigned int i = 0; i < size; i++)
 	{
 		char c = ((uint8_t *)buffer)[i];
 
-		if (state == 1)
+		/* Invariant: if in the escaped state, it means we've seen a \033 followed by
+		 * zero or more other characters that do NOT (yet) make a parseable supported
+		 * ANSI escape code, and that there is room for at least one more char
+		 * in our escape buffer. */
+		if (_escape_nchars)
 		{
-			attr = (int)c << 8;
-			state = 0;
+			assert(_escape_nchars < sizeof _escape_buffer);
+			/* For now we just support that subset of the Select Graphic Rendition
+			 * escape codes that correspond to VGA features, i.e. colour and 'blink'
+			 * and reverse video. These have the form
+			 * \033[Xm
+			 *
+			 * where X is a semicolon-separated list drawn from the specifiers (see
+			 * comment in apply_ansi_specifier, above). Each specifier is given as
+			 * a decimal number, i.e. a sequence drawn from 0..9.
+			 *
+			 * Other specifiers may be included but will be ignored. So e.g.
+			 *
+			 * ^[ [ 3 4 ; 1 m
+			 *
+			 * will set the foreground colour to blue. The '1' also requests bold,
+			 * but we ignore it.
+			 *
+			 * To parse, just look for an initial '[' and if seen, gobble digits or semicolons
+			 * until we see 'm'.
+			 */
+			bool do_parse = false;
+			if (_escape_nchars == 1 && c == '[') goto append;
+			if (_escape_nchars >= 2 && c == 'm') { do_parse = true; goto append; }
+			if (_escape_nchars >= 2 && c >= '0' && c <= '9') goto append;
+			if (_escape_nchars >= 2 && c == ';') goto append;
+			// if not ';' or 0-9 or 'm', we can reset
+			goto reset;
+		append:
+			_escape_buffer[_escape_nchars++] = c;
+			if (do_parse) parse_escape_buffer();
+			else if (_escape_nchars != sizeof _escape_buffer) continue;
+			// else we're out of space; fall through from parse to reset
+		reset:
+			_escape_nchars = 0;
+			_escape_buffer[0] = '\0';
+			continue; // next char
 		}
-		else if (state == 0)
+		else
 		{
 			if (c == '\n')
 			{
@@ -165,16 +293,17 @@ int VirtualConsole::write(const void *buffer, size_t size)
 			}
 			else if (c == '\33')
 			{
-				state = 1;
+				_escape_buffer[0] = '\033';
+				_escape_nchars = 1;
 			}
 			else if (c == '\b')
 			{
 				_current_pos--;
-				_buffer[_current_pos] = attr | ' ';
+				_buffer[_current_pos] = (((uint16_t) this->_attr_byte) << 8) | ' ';
 			}
 			else
 			{
-				_buffer[_current_pos] = attr | c;
+				_buffer[_current_pos] = (((uint16_t) this->_attr_byte) << 8) | c;
 				_current_pos++;
 			}
 

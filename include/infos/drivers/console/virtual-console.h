@@ -90,10 +90,16 @@ namespace infos
 
 				KeyboardModifiers _current_mod_mask;
 
+				uint8_t apply_ansi_specifier(int code);
+				void parse_escape_buffer();
+
 				constexpr static int _width = 80;
 				constexpr static int _height = 25;
 
 				uint16_t _current_pos;
+				uint8_t _escape_nchars;
+				uint8_t _attr_byte;
+				uint8_t _escape_buffer[16];
 
 				terminal::Terminal *_terminal;
 				uint16_t *_buffer;
