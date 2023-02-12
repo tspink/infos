@@ -13,6 +13,7 @@
 #include <arch/x86/msr.h>
 #include <arch/x86/cpuid.h>
 #include <arch/x86/acpi/acpi.h>
+#include <arch/x86/qemu-stream.h>
 
 #include <infos/kernel/log.h>
 #include <infos/kernel/kernel.h>
@@ -30,15 +31,38 @@
 #include <infos/util/cmdline.h>
 #include <infos/util/string.h>
 
+using namespace infos::kernel;
+
 // Define a command-line argument that lets us redirect the kernel
-// syslog to the serial port.
-static bool syslog_to_serial = false;
+// syslog to the serial port, to the VGA console, or leave on qemu_stream.
+static enum {
+	DEFAULT, QEMU, SERIAL, VGA
+} syslog_dest;
+// We also define a command-line argument for putting the first tty on the serial port.
+static bool tty0_to_serial = false;
 
 RegisterCmdLineArgument(SysLogDestination, "syslog") {
 	if (infos::util::strncmp(value, "serial", 6) == 0) {
-		syslog_to_serial = true;
+		syslog.message(LogLevel::INFO, "will transfer syslog to serial port");
+		syslog_dest = SERIAL;
+	} else if (infos::util::strncmp(value, "qemu", 6) == 0) {
+		syslog.message(LogLevel::INFO, "will ensure syslog is on qemu stream");
+		syslog_dest = QEMU;
+	} else if (infos::util::strncmp(value, "vga", 6) == 0) {
+		syslog.message(LogLevel::INFO, "will transfer syslog to VGA console");
+		syslog_dest = VGA;
 	} else {
-		syslog_to_serial = false;
+		/* Do the default thing, currently qemu->VGA */
+	}
+}
+
+RegisterCmdLineArgument(Tty0IsSerial, "tty0") {
+	if (infos::util::strncmp(value, "serial", 6) == 0) {
+		syslog.message(LogLevel::INFO, "will create first tty on serial port");
+		tty0_to_serial = true;
+	} else {
+		syslog.message(LogLevel::INFO, "will NOT create first tty on serial port");
+		tty0_to_serial = false;
 	}
 }
 
@@ -131,13 +155,27 @@ bool infos::arch::x86::console_init()
 	if (!sys.device_manager().register_device(*new Keyboard()))
 		return false;
 
+	// Check command line and create a serial device if necessary.
+	// This will become tty0.
+	if (tty0_to_serial)
+	{
+		UART *uart = new UART();
+		if (!sys.device_manager().register_device(*uart))
+			return false;
+		SerialTerminal *tty = new SerialTerminal();
+		if (!sys.device_manager().register_device(*tty))
+			return false;
+		tty->attach_uart(*uart);
+		uart->attach_terminal(*tty);
+	}
+
 	// Create a terminal that will be associated with the virtual console.
-	Terminal *tty0 = new ConsoleTerminal();
-	if (!sys.device_manager().register_device(*tty0))
+	ConsoleTerminal *tty = new ConsoleTerminal();
+	if (!sys.device_manager().register_device(*tty))
 		return false;
 
 	// Add an alias to the TTY device called 'console'.
-	if (!sys.device_manager().add_device_alias("console", *tty0))
+	if (!sys.device_manager().add_device_alias("console", *tty))
 		return false;
 
 	// Create another terminal for a second virtual console.
@@ -174,24 +212,43 @@ bool infos::arch::x86::activate_console()
 	if (!sys.device_manager().try_get_device_by_class(input::Keyboard::KeyboardDeviceClass, kbd0)) return false;
 
 	// Lookup the terminals that will be attached to the virtual consoles.
-	Terminal *tty0, *tty1;
+	// HACK: iff we have tty2, it means tty0 is a serial console.
+	// In that case we'll attach tty1 and tty2; otherwise, tty0 and tty1.
+	// This is a major HACK; we should be able to discover this flexibly.
+	Terminal *tty0, *tty1, *tty2 = nullptr;
 	if (!sys.device_manager().try_get_device_by_name("tty0", tty0)) return false;
 	if (!sys.device_manager().try_get_device_by_name("tty1", tty1)) return false;
+	sys.device_manager().try_get_device_by_name("tty2", tty2);
 
 	// Attach the terminals to the virtual consoles.
-	vc0->attach_terminal((ConsoleTerminal*) tty0);
-	vc1->attach_terminal((ConsoleTerminal*) tty1);
+	if (tty2)
+	{
+		if (!tty0_to_serial) // BUG!
+		{
+			syslog.messagef(LogLevel::ERROR, "confused about tty0...");
+		}
+		vc0->attach_terminal((ConsoleTerminal*) tty1);
+		vc1->attach_terminal((ConsoleTerminal*) tty2);
+	}
+	else
+	{
+		vc0->attach_terminal((ConsoleTerminal*) tty0);
+		vc1->attach_terminal((ConsoleTerminal*) tty1);
+	}
 
 	// Initialise the physical console
 	kbd0->attach_sink(*pc0);
 	pc0->add_virtual_console(*vc0);
 	pc0->add_virtual_console(*vc1);
 
-	// If syslog is not being redirected to the serial port, switch the
-	// syslog output stream to the root terminal.
-	if (!syslog_to_serial) {
-		syslog.colour(false);
-		syslog.set_stream(*tty0);
+	syslog.message(LogLevel::INFO, "About to transfer syslog...");
+	switch (syslog_dest)
+	{
+		case SERIAL: /* syslog.colour(false); */ syslog.set_stream(*tty0); break;
+		case DEFAULT:
+		case VGA:  syslog.set_stream(tty2 ? *tty1 : *tty0); break;
+		case QEMU: syslog.set_stream(qemu_stream); break;
+		default: assert(false);
 	}
 
 	// Everything worked, so return true.
