@@ -12,9 +12,10 @@ namespace infos
 	namespace drivers {
 		namespace terminal {
 			class Terminal;
+			class SerialTerminal;
 		}
 	}
-	using drivers::terminal::Terminal;
+	using drivers::terminal::SerialTerminal;
 	namespace arch
 	{
 		namespace x86
@@ -48,11 +49,11 @@ namespace infos
 				void putc(int c);
 				int getc();
 				static void irq_handler(const kernel::IRQ *irq, void *priv);
-				void attach_terminal(Terminal& term) { _attached_terminal = &term; }
+				void attach_terminal(SerialTerminal& term) { _attached_terminal = &term; }
 				friend class SerialTerminal; // a bit nasty
 			private:
 				kernel::IRQ *_irq;
-				Terminal *_attached_terminal;
+				SerialTerminal *_attached_terminal;
 			};
 		}
 	}

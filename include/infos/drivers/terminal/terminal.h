@@ -12,6 +12,7 @@
 #include <infos/drivers/device.h>
 #include <infos/io/stream.h>
 #include <infos/util/event.h>
+#include <arch/x86/uart.h> /* HACK */
 
 namespace infos {
 	namespace fs {
@@ -63,6 +64,24 @@ namespace infos {
 			private:
 				console::VirtualConsole *_attached_virt_console;
 				console::PhysicalConsole *_attached_phys_console;
+			};
+			class SerialTerminal : public Terminal
+			{
+			public:
+				SerialTerminal();
+				virtual ~SerialTerminal();
+
+				/* FIXME: UART should not be in arch::x86 */
+				void attach_uart(arch::x86::UART& uart) { _attached_uart = &uart; }
+
+				int write(const void* buffer, size_t size) override;
+				/* Serial line protocols might require us to lightly cook the raw chars. */
+				void buffer_raw_character(uint8_t c);
+
+				bool supports_colour() const { return true; }
+
+			private:
+				arch::x86::UART *_attached_uart;
 			};
 		}
 	}

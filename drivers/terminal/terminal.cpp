@@ -36,12 +36,22 @@ ConsoleTerminal::ConsoleTerminal()
 
 }
 
+SerialTerminal::SerialTerminal()
+{
+
+}
+
 Terminal::~Terminal()
 {
 
 }
 
 ConsoleTerminal::~ConsoleTerminal()
+{
+
+}
+
+SerialTerminal::~SerialTerminal()
 {
 
 }
@@ -73,6 +83,26 @@ int Terminal::read(void* raw_buffer, size_t size)
 	}
 
 	return n;
+}
+
+int SerialTerminal::write(const void* buffer, size_t size)
+{
+	if (_attached_uart) {
+		return _attached_uart->write(buffer, size);
+	} else {
+		return 0;
+	}
+}
+void SerialTerminal::buffer_raw_character(uint8_t c)
+{
+	switch (c)
+	{
+		/* For a physical keyboard on the VGA console keyboard, the key 'Enter'
+		 * generates '\n'. So translate the raw serial protocol to do the same. */
+		case '\r': append_to_read_buffer('\n'); break;
+		default:
+			append_to_read_buffer(c); break;
+	}
 }
 
 int ConsoleTerminal::write(const void* buffer, size_t size)

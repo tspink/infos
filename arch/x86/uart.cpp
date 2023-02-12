@@ -158,13 +158,13 @@ void UART::irq_handler(const kernel::IRQ *irq, void *priv)
 
 	UART *uart = (UART *)priv;
 	int c = uart->getc();
-#if 1 /* This is just for testing */
+#if 0 /* This is just for testing */
 	if (c != -1) {
 		syslog.message(LogLevel::INFO, "UART interrupt yielded a character"/*, (char) c*/);
 	} else {
 		syslog.message(LogLevel::INFO, "UART interrupt yielded -1");
 	}
 #endif
-	// TODO: buffer this as pending data, something like this
-	// if (uart->_attached_terminal) uart->_attached_terminal->buffer_raw_character(c);
+	// buffer this as pending data
+	if (uart->_attached_terminal) uart->_attached_terminal->buffer_raw_character(c);
 }
