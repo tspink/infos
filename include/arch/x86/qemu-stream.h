@@ -16,6 +16,7 @@ namespace infos
 				int read(void* buffer, size_t size) override;
 				int write(const void* buffer, size_t size) override;
 			};
+			extern QEMUStream qemu_stream;
 		}
 	}
 }

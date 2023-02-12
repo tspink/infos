@@ -29,7 +29,7 @@ using namespace infos::util;
 //static EarlyScreen early_screen;
 
 // Create a QEMU stream for the syslog.
-static QEMUStream qemu_stream;
+QEMUStream infos::arch::x86::qemu_stream;
 ComponentLog infos::arch::x86::x86_log(syslog, "x86");
 
 // Reference to the value of EBX at multiboot entry.
