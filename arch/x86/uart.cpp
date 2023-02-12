@@ -38,13 +38,14 @@ int UART::read(void* buffer, size_t size)
 int UART::write(const void* buffer, size_t size)
 {
 	for (unsigned int i = 0; i < size; i++) {
-		syslog.message(LogLevel::INFO, "UART putting a character: ");
 		char c = ((char *)buffer)[i];
+#if 0
+		syslog.message(LogLevel::INFO, "UART putting a character: ");
 		char cs[] = { c, 0 };
 		if (c >= 32 && c < 128) syslog.message(LogLevel::INFO, cs);
 		else if (c < 32) syslog.message(LogLevel::INFO, "(control code)");
 		else syslog.message(LogLevel::INFO, "(high byte)");
-
+#endif
 		/* HACK: this translation doesn't belong in the UART code,
 		 * but in a 'serial console' translation layer or possibly
 		 * just in SerialTerminal. */
