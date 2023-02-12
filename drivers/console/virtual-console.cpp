@@ -37,7 +37,7 @@ VirtualConsole::~VirtualConsole()
 	delete _buffer;
 }
 
-void VirtualConsole::attach_terminal(terminal::Terminal *terminal)
+void VirtualConsole::attach_terminal(terminal::ConsoleTerminal *terminal)
 {
 	_terminal = terminal;
 	_terminal->attach_output(*this);

@@ -132,7 +132,7 @@ bool infos::arch::x86::console_init()
 		return false;
 
 	// Create a terminal that will be associated with the virtual console.
-	Terminal *tty0 = new Terminal();
+	Terminal *tty0 = new ConsoleTerminal();
 	if (!sys.device_manager().register_device(*tty0))
 		return false;
 
@@ -141,7 +141,7 @@ bool infos::arch::x86::console_init()
 		return false;
 
 	// Create another terminal for a second virtual console.
-	if (!sys.device_manager().register_device(*new Terminal()))
+	if (!sys.device_manager().register_device(*new ConsoleTerminal()))
 		return false;
 
 	// Create and register two virtual console devices.
@@ -179,8 +179,8 @@ bool infos::arch::x86::activate_console()
 	if (!sys.device_manager().try_get_device_by_name("tty1", tty1)) return false;
 
 	// Attach the terminals to the virtual consoles.
-	vc0->attach_terminal(tty0);
-	vc1->attach_terminal(tty1);
+	vc0->attach_terminal((ConsoleTerminal*) tty0);
+	vc1->attach_terminal((ConsoleTerminal*) tty1);
 
 	// Initialise the physical console
 	kbd0->attach_sink(*pc0);

@@ -24,14 +24,24 @@ const DeviceClass Terminal::TerminalDeviceClass(Device::RootDeviceClass, "tty");
 
 Terminal::Terminal()
 	: _read_buffer_head(0),
-		_read_buffer_tail(0),
-		_attached_virt_console(NULL),
+		_read_buffer_tail(0)
+{
+
+}
+
+ConsoleTerminal::ConsoleTerminal()
+	: 	_attached_virt_console(NULL),
 		_attached_phys_console(NULL)
 {
 
 }
 
 Terminal::~Terminal()
+{
+
+}
+
+ConsoleTerminal::~ConsoleTerminal()
 {
 
 }
@@ -65,7 +75,7 @@ int Terminal::read(void* raw_buffer, size_t size)
 	return n;
 }
 
-int Terminal::write(const void* buffer, size_t size)
+int ConsoleTerminal::write(const void* buffer, size_t size)
 {
 	if (_attached_virt_console) {
 		return _attached_virt_console->write(buffer, size);
