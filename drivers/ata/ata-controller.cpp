@@ -115,7 +115,7 @@ uint8_t ATAController::ata_read(int channel, int reg)
 	} else if (reg < 0x0C) {
 		result = __inb(channels[channel].base + reg - 0x06);
 	} else if (reg < 0x0E) {
-		result = __inb(channels[channel].ctrl + reg - 0x0A);
+		result = __inb(channels[channel].ctrl + reg - 0x0C);
 	} else if (reg < 0x16) {
 		result = __inb(channels[channel].bmide + reg - 0x0E);
 	}
@@ -138,7 +138,7 @@ void ATAController::ata_read_buffer(int channel, int reg, void* buffer, size_t s
 	} else if (reg < 0x0C) {
 		__insl(channels[channel].base + reg - 0x06, (uintptr_t)buffer, size >> 2);
 	} else if (reg < 0x0E) {
-		__insl(channels[channel].ctrl + reg - 0x0A, (uintptr_t)buffer, size >> 2);
+		__insl(channels[channel].ctrl + reg - 0x0C, (uintptr_t)buffer, size >> 2);
 	} else if (reg < 0x16) {
 		__insl(channels[channel].bmide + reg - 0x0E, (uintptr_t)buffer, size >> 2);
 	}
@@ -159,7 +159,7 @@ void ATAController::ata_write(int channel, int reg, uint8_t data)
 	} else if (reg < 0x0C) {
 		__outb(channels[channel].base + reg - 0x06, data);
 	} else if (reg < 0x0E) {
-		__outb(channels[channel].ctrl + reg - 0x0A, data);
+		__outb(channels[channel].ctrl + reg - 0x0C, data);
 	} else if (reg < 0x16) {
 		__outb(channels[channel].bmide + reg - 0x0E, data);
 	}
